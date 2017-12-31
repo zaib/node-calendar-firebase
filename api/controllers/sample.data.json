@@ -1,0 +1,60 @@
+{
+  "email": "abc@qwerty.com",
+  "type": "counselor",
+  "settings": {
+    "meetingDuration": [15, 30],
+    "studentMeetingLimit": 1,
+    "timeLimitBeforeSchedule": 30
+  },
+  "meetings": []
+}
+
+
+{
+  "email": "abc@qwerty.com",
+  "type": "counselor",
+  "settings": {
+    "meetingDuration": [15, 30],
+    "studentMeetingLimit": 1,
+    "timeLimitBeforeSchedule": 30
+  },
+  "meetings": [{
+      "studentId": 1231231,
+      "type": "appointment",
+      "startTime": "21:00:00 GMT-0500 (EST)",
+      "endTime": "21:15:00 GMT-0500 (EST)",
+      "meetingDuration": 15,
+      "date": "Thu Dec 28 2017"
+    },
+    {
+      "meetingId": 123123132,
+      "counselorId": 1231231,
+      "StudentId": 1231231,
+      "type": "appointment",
+      "startTime": "20:54:53 GMT-0500 (EST)",
+      "endTime": "20:54:53 GMT-0500 (EST)",
+      "meetingDuration": 15,
+      "date": "Thu Dec 28 2017"
+    },
+    {
+      "meetingId": 123123132,
+      "counselorId": 1231231,
+      "StudentId": 1231231,
+      "type": "appointment",
+      "startTime": "20:54:53 GMT-0500 (EST)",
+      "endTime": "20:54:53 GMT-0500 (EST)",
+      "meetingDuration": 15,
+      "date": "Thu Dec 28 2017"
+    },
+    {
+      "meetingId": 123123132,
+      "counselorId": 1231231,
+      "StudentId": 1231231,
+      "type": "appointment",
+      "startTime": "20:54:53 GMT-0500 (EST)",
+      "endTime": "20:54:53 GMT-0500 (EST)",
+      "meetingDuration": 15,
+      "date": "Thu Dec 28 2017"
+    }
+  ]
+}
