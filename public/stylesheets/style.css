@@ -1,8 +1,50 @@
 body {
-  padding: 50px;
-  font: 14px "Lucida Grande", Helvetica, Arial, sans-serif;
+	padding: 50px;
+	font: 14px "Lucida Grande", Helvetica, Arial, sans-serif;
 }
 
 a {
-  color: #00B7FF;
+	color: #00B7FF;
+}
+
+#main-content {
+	margin: 20px;
+	width: 750px;
+}
+
+#title-banner {
+	margin: 20px 0;
+	height: 64px;
+}
+
+#user-email {
+	margin-bottom: 20px;
+}
+
+#table-row {
+	margin: 20px 0;
+}
+
+#event-subject {
+	margin-top: 20px;
+}
+
+#body-text {
+	width: 100%;
+}
+
+#action-buttons {
+	margin: 20px 0;
+}
+
+input.ms-Button--primary {
+	color: #fff;
+}
+
+.ms-Table {
+	margin: 20px 0;
+}
+
+.ms-Button {
+	text-decoration: none;
 }

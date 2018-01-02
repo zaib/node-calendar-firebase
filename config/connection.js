@@ -1,6 +1,6 @@
 
 var firebase = require("firebase-admin");
-var serviceAccount = require("./connecpath-firebase-adminsdk.json");
+var serviceAccount = require('./config').firebase;
 firebase.initializeApp({
   credential: firebase.credential.cert(serviceAccount),
   databaseURL: "https://connecpath.firebaseio.com"

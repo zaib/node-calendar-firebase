@@ -5,7 +5,8 @@
 	<meta charset="utf-8">
 	<title>Login</title>
 	<link type="text/css" rel="stylesheet" href="//appsforoffice.microsoft.com/fabric/1.0/fabric.min.css">
-	<link type="text/css" rel="stylesheet" href="//appsforoffice.microsoft.com/fabric/1.0/fabric.components.min.css">
+    <link type="text/css" rel="stylesheet" href="//appsforoffice.microsoft.com/fabric/1.0/fabric.components.min.css">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-alpha.6/css/bootstrap.min.css" integrity="sha384-rwoIResjU2yc3z8GV/NPeZWAv56rSmLldC3R/AZzGRnGxQQKnKkoFVhFQhNUwEyJ" crossorigin="anonymous">
 	<link type="text/css" rel="stylesheet" href="/stylesheets/style.css">
 </head>
 
@@ -15,10 +16,9 @@
 			<div id="title-banner" class="ms-font-su">Outlook Calendar Sync Demo</div>
 		</div>
 		<div id="body-content" class="ms-Grid-row">
-			<a id="signin-button" class="ms-Button ms-Button--primary" href="<%= authUrl %>">
-				<span class="ms-Button-label">Click here to sign in</span>
-			</a>
-		</div>
+            <h1>Welcome! <%= data.username %></h1>
+            <p>Your oulook calendar has synced with connectpath now.</p>
+        </div>
 	</div>
 </body>
 
