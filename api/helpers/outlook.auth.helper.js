@@ -39,7 +39,7 @@ module.exports = {
 			scope: scopes.join(' ')
 		}, function (error, result) {
 			if (error) {
-                console.log('Access token error: ', error);
+                // console.log('Access token error: ', error);
                 // return response.json(error);
 				callback(request, response, error, null);
 			} else {
@@ -63,7 +63,7 @@ module.exports = {
 		var jwt = JSON.parse(decoded_token);
 
 		// Email is in the preferred_username field
-		return jwt.preferred_username
+		return jwt.preferred_username;
 	},
 
 	getTokenFromRefreshToken: function (refresh_token, callback, request, response) {

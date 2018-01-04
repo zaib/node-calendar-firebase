@@ -6,10 +6,6 @@ var cookieParser = require('cookie-parser');
 var bodyParser = require('body-parser');
 var session = require('express-session');
 
-var index = require('./api/routes/index');
-var users = require('./api/controllers/users.controller');
-var outlookCtrl = require('./api/controllers/outlook.controller');
-
 var app = express();
 
 // view engine setup
@@ -33,8 +29,14 @@ app.use(session({
 
 app.use(express.static(path.join(__dirname, 'public')));
 
+var index = require('./api/routes/index');
+var usersCtrl = require('./api/controllers/users.controller');
+var eventsCtrl = require('./api/controllers/events.controller');
+var outlookCtrl = require('./api/controllers/outlook.controller');
+
 app.use('/', index);
-app.use('/users', users);
+app.use('/events', eventsCtrl);
+app.use('/users', usersCtrl);
 app.use('/outlook', outlookCtrl);
 
 // catch 404 and forward to error handler

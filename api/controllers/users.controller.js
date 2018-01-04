@@ -3,10 +3,9 @@ var router = express.Router();
 
 var firebase = require('./../../config/connection.js');
 var ref = firebase.ref('users');
-
 /* GET users listing. */
 router.get('/', function (req, res, next) {
-	res.send('respond with a resource');
+	res.send('Users -> OK');
 });
 
 router.get('/:username', function (req, res) {
@@ -16,10 +15,9 @@ router.get('/:username', function (req, res) {
 	});
 });
 
-
 var upsertUser = function upsertUser(req, res) {
 	var username = req.params.username;
-	var payload = {};	
+	var payload = {};
 	payload = req.body;
 	payload.username = username;
 	ref.child(`/${username}`).update(payload);
@@ -28,11 +26,18 @@ var upsertUser = function upsertUser(req, res) {
 router.post('/:username', upsertUser);
 router.put('/:username', upsertUser);
 
+router.delete('/:username', function (req, res) {
+	var username = req.params.username;
+	ref.child(`/${username}`).remove().then((err) => console.log(err));
+
+	return res.json({message: 'record deleted.'});
+});
+
 
 var upsertMeeting = function upsertMeeting(req, res) {
 	var payload = {};
 	payload = req.body;
-	
+
 	var username = req.params.username;
 	var meetingKey = (req.params.meetingKey) ? req.params.meetingKey : ref.push().key;
 
@@ -44,13 +49,13 @@ router.post('/:username/meetings/:meetingKey', upsertMeeting);
 router.put('/:username/meetings/:meetingKey', upsertMeeting);
 
 
-var getMeetingsList = function getMeetingsList(req, res){
+var getMeetingsList = function getMeetingsList(req, res) {
 	var username = req.params.username;
 	var meetingKey = req.params.meetingKey;
 
 	ref.child(`/${username}/meetings`).once('value').then(function (snapshot) {
 		return res.json(snapshot);
-  });
+	});
 };
 router.get('/:username/meetings', getMeetingsList);
 
