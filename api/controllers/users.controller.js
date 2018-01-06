@@ -49,9 +49,10 @@ var deleteUser = function (req, res) {
 router.delete('/:username', deleteUser);
 
 var getUserSettings = function getUserSettings(req, res) {
-	var username = req.params.username;
+	let username = req.params.username;
 	ref.child(`/${username}/settings`).once('value').then(function (snapshot) {
-		return res.json(snapshot);
+		let snapshotVal = snapshot.val();	
+		return res.json(snapshotVal);
 	});
 };
 router.get('/:username/settings', getUserSettings);

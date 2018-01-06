@@ -39,7 +39,8 @@ var getAllEvents = function getAllEvents(req, res) {
 
 	} else {
 		ref.child(`/${username}/events`).once('value').then(function (snapshot) {
-			let events = Object.values(snapshot.val());
+			var snapshotVal = snapshot.val();
+			let events =  (snapshotVal) ? Object.values(snapshotVal) : [];
 			return res.json(events);
 		}).catch(function (err) {
 			return res.json(err);
