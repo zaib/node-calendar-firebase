@@ -32,10 +32,12 @@ app.use(express.static(path.join(__dirname, 'public')));
 var index = require('./api/routes/index');
 var usersCtrl = require('./api/controllers/users.controller');
 var eventsCtrl = require('./api/controllers/events.controller');
+var syncEventsCtrl = require('./api/controllers/sync.events.controller');
 var outlookCtrl = require('./api/controllers/outlook.controller');
 
 app.use('/', index);
 app.use('/events', eventsCtrl);
+app.use('/sync/events', syncEventsCtrl);
 app.use('/users', usersCtrl);
 app.use('/outlook', outlookCtrl);
 

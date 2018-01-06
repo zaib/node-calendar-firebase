@@ -3,17 +3,30 @@ var router = express.Router();
 
 var firebase = require('./../../config/connection.js');
 var ref = firebase.ref('users');
+
+var payloadCheck = require('payload-validator');
+var userSettingsSchema = {
+	location: '',
+	timezone: '',
+	meetingDuration: [0, 0, 0, 0],
+	studentMeetingLimit: 0,
+	timeLimitBeforeSchedule: 0,
+};
+var requiredFields = [];
+var isNullValuesAllowed = false;
+
 /* GET users listing. */
 router.get('/', function (req, res, next) {
 	res.send('Users -> OK');
 });
 
-router.get('/:username', function (req, res) {
+var getUser = function getUser(req, res) {
 	var username = req.params.username;
 	ref.child(`/${username}`).once('value').then(function (snapshot) {
 		return res.json(snapshot);
 	});
-});
+};
+router.get('/:username', getUser);
 
 var upsertUser = function upsertUser(req, res) {
 	var username = req.params.username;
@@ -26,47 +39,36 @@ var upsertUser = function upsertUser(req, res) {
 router.post('/:username', upsertUser);
 router.put('/:username', upsertUser);
 
-router.delete('/:username', function (req, res) {
+var deleteUser = function (req, res) {
 	var username = req.params.username;
 	ref.child(`/${username}`).remove().then((err) => console.log(err));
+	return res.json({
+		message: 'record deleted.'
+	});
+};
+router.delete('/:username', deleteUser);
 
-	return res.json({message: 'record deleted.'});
-});
-
-
-var upsertMeeting = function upsertMeeting(req, res) {
-	var payload = {};
-	payload = req.body;
-
+var getUserSettings = function getUserSettings(req, res) {
 	var username = req.params.username;
-	var meetingKey = (req.params.meetingKey) ? req.params.meetingKey : ref.push().key;
+	ref.child(`/${username}/settings`).once('value').then(function (snapshot) {
+		return res.json(snapshot);
+	});
+};
+router.get('/:username/settings', getUserSettings);
 
-	ref.child(`/${username}/meetings/${meetingKey}`).update(payload);
+var upsertUserSettings = function upsertUserSettings(req, res) {
+	var username = req.params.username;
+	var payload = req.body;
+
+	var schemaValidation = payloadCheck.validator(payload, userSettingsSchema, requiredFields, isNullValuesAllowed);
+	if (!schemaValidation.success) {
+		return res.json(schemaValidation);
+	}
+
+	ref.child(`/${username}/settings`).update(payload);
 	return res.json(payload);
 };
-router.post('/:username/meetings', upsertMeeting);
-router.post('/:username/meetings/:meetingKey', upsertMeeting);
-router.put('/:username/meetings/:meetingKey', upsertMeeting);
-
-
-var getMeetingsList = function getMeetingsList(req, res) {
-	var username = req.params.username;
-	var meetingKey = req.params.meetingKey;
-
-	ref.child(`/${username}/meetings`).once('value').then(function (snapshot) {
-		return res.json(snapshot);
-	});
-};
-router.get('/:username/meetings', getMeetingsList);
-
-var getMeetingDetail = function getMeetingDetail(req, res) {
-	var username = req.params.username;
-	var meetingKey = req.params.meetingKey;
-
-	ref.child(`/${username}/meetings/${meetingKey}`).once('value').then(function (snapshot) {
-		return res.json(snapshot);
-	});
-};
-router.get('/:username/meetings/:meetingKey', getMeetingDetail);
+router.post('/:username/settings', upsertUserSettings);
+router.put('/:username/settings', upsertUserSettings);
 
 module.exports = router;

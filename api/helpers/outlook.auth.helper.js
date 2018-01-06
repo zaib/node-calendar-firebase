@@ -91,14 +91,15 @@ module.exports = {
 				dateDifference = moment(item.End.DateTime).diff(item.Start.DateTime);
 				meetingDuration = moment.utc(dateDifference).format("mm");
 				meetingDuration = parseInt(meetingDuration);
-
+				
 				events.push({
-					id: item.Id,
+					outlookEventId: item.Id,
 					subject: item.Subject,
 					startTime: item.Start.DateTime,
 					endTime: item.End.DateTime,
 					date: moment(item.Start.DateTime).format('YYYY-MM-DD'),
 					meetingDuration: meetingDuration,
+					location: item.Location.DisplayName,
 					type: 'appointment',
 					source: 'outlook'
 				});
@@ -106,5 +107,22 @@ module.exports = {
 		}
 
 		return events;
+	},
+	parseOutlookEvent: function (event) {
+		let parsedEvent = event;
+		if (event) {
+			
+			parsedEvent = {
+				outlookEventId: event.Id,
+				subject: event.Subject,
+				body: event.Body.Content,
+				fromTime: event.Start.DateTime,
+				toTime: event.End.DateTime,
+				location: (event.Location && event.Location.DisplayName) ? event.Location.DisplayName: '',
+				type: 'appointment',
+				source: 'outlook'
+			};
+		}
+		return parsedEvent;
 	}
 };

@@ -1,47 +1,122 @@
-var express = require('express');
-var router = express.Router();
-var _ = require('lodash');
+const express = require('express');
+const router = express.Router();
 
-var firebase = require('./../../config/connection.js');
-var ref = firebase.ref('users');
+const firebase = require('./../../config/connection.js');
+const ref = firebase.ref('users');
 
+const moment = require('moment');
+const payloadCheck = require('payload-validator');
+const eventSchema = {
+	subject: '', // '' means data type is string 
+	fromTime: 0, // 0 means data type is number
+	toTime: 0,
+	date: 0,
+	location: '',
+	type: '',
+	source: '',
+};
+const requiredFields = [];
+const isNullValuesAllowed = false;
 
-var getAllEvents = function getAllEvents(req, res){
-	var username = req.params.username;
-	ref.child(`/${username}/events`).once('value').then(function (response) {
-		var result = response.val();
-		var events = Object.values(result);
-		return res.json(events);
-  });
+var getAllEvents = function getAllEvents(req, res) {
+	let username = req.params.username;
+
+	let fromDate = req.query.fromDate;
+	let toDate = req.query.toDate;
+
+	if (fromDate && toDate) {
+
+		fromDate = moment(fromDate).unix();
+		toDate = moment(toDate).unix();
+
+		ref.child(`/${username}/events`).orderByChild("date").startAt(fromDate).endAt(toDate).once("value").then(function (snapshot) {
+			var snapshotVal = snapshot.val();
+			let events =  (snapshotVal) ? Object.values(snapshotVal) : [];
+			return res.json(events);			
+		}).catch(function (err) {
+			return res.json(err);
+		});
+
+	} else {
+		ref.child(`/${username}/events`).once('value').then(function (snapshot) {
+			let events = Object.values(snapshot.val());
+			return res.json(events);
+		}).catch(function (err) {
+			return res.json(err);
+		});
+	}
 };
 router.get('/:username', getAllEvents);
 
 var getEventDetail = function getEventDetail(req, res) {
-	var username = req.params.username;
-	var eventKey = req.params.eventKey;
+	let username = req.params.username;
+	let eventKey = req.params.id;
 	ref.child(`/${username}/events/${eventKey}`).once('value').then(function (response) {
 		return res.json(response);
 	});
 };
-router.get('/:username/:eventKey', getEventDetail);
+router.get('/:username/:id', getEventDetail);
 
-var upsertEvent = function upsertEvent(req, res) {
-	var payload = {};
-	payload = req.body;
+var createEvent = function createEvent(req, res) {
+	let username = req.params.username;
 	
-	var username = req.params.username;
-	var eventKey = (req.params.eventKey) ? req.params.eventKey : ref.push().key;
+	
+	let payload = req.body;
+	payload.id = ref.push().key;
+	let eventId = payload.id;
 
-	if(username && eventKey) {
-		ref.child(`/${username}/events/${eventKey}`).update(payload);
-		return res.json(payload);
-	} else {
-		var error = "param missing";
-		return res.json({error});
+	// conver fromTime/toTime to unix timestamp
+	payload.date = moment(payload.fromTime, 'YYYY-MM-DD').unix();
+	payload.fromTime = moment(payload.fromTime).unix();
+	payload.toTime = moment(payload.toTime).unix();
+	
+	// payload validation
+	let schemaValidation = payloadCheck.validator(payload, eventSchema, requiredFields, isNullValuesAllowed);
+	if (!schemaValidation.success) {
+		return res.json(schemaValidation);
 	}
+
+	ref.child(`/${username}/events/${eventId}`).set(payload);
+	return res.json(payload);
 };
-router.post('/:username', upsertEvent);
-router.post('/:username/:eventKey', upsertEvent);
-router.put('/:username/:eventKey', upsertEvent);
+router.post('/:username', createEvent);
+
+var updateEvent = function updateEvent(req, res) {
+	let username = req.params.username;
+	let eventId = req.params.id;
+
+	let payload = req.body;
+	payload.id = eventId;
+	
+	// conver fromTime/toTime to unix timestamp
+	payload.date = moment(payload.fromTime, 'YYYY-MM-DD').unix();
+	payload.fromTime = moment(payload.fromTime).unix();
+	payload.toTime = moment(payload.toTime).unix();
+
+	// payload validation	
+	var schemaValidation = payloadCheck.validator(payload, eventSchema, requiredFields, isNullValuesAllowed);
+	if (!schemaValidation.success) {
+		return res.json(schemaValidation);
+	}
+
+	ref.child(`/${username}/events/${eventId}`).update(payload).then(function (result) {
+		return res.json(payload);
+	}).catch(function(err) {
+		return res.json(err);
+	});
+};
+router.post('/:username/:id', updateEvent);
+router.put('/:username/:id', updateEvent);
+
+var deleteEvent = function upsertEvent(req, res) {
+	let username = req.params.username;
+	let eventId = req.params.id;
+	ref.child(`/${username}/events/${eventId}`).remove().then(function (result) {
+		return res.json({
+			message: 'event deleted.'
+		});
+	});
+};
+router.delete('/:username/:id', deleteEvent);
 
 module.exports = router;
