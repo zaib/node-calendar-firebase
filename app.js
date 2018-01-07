@@ -7,6 +7,7 @@ const bodyParser = require('body-parser');
 const session = require('express-session');
 
 const app = express();
+const passport = require('passport');
 
 // view engine setup
 app.set('views', path.join(__dirname, 'views'));
@@ -26,6 +27,7 @@ app.use(session({
 	saveUninitialized: false
 }));
 
+app.use(passport.initialize());
 
 app.use(express.static(path.join(__dirname, 'public')));
 
@@ -37,7 +39,7 @@ const passAcessTokens = (req, res, next) => {
 	let username = req.headers.username;
 	ref.child(`/${username}/outlook`).once('value').then(function (snapshot) {
 		let snapshotVal = snapshot.val();
-		if(snapshotVal && snapshotVal.access_token) {
+		if (snapshotVal && snapshotVal.access_token) {
 			req.headers.access_token = snapshotVal.access_token;
 		}
 		next();
@@ -50,7 +52,7 @@ const usersCtrl = require('./api/controllers/users.controller');
 const eventsCtrl = require('./api/controllers/events.controller');
 const syncEventsCtrl = require('./api/controllers/sync.events.controller');
 const outlookCtrl = require('./api/controllers/outlook.controller');
-
+const googleCtrl = require('./api/controllers/google.controller');
 
 app.use('/', index);
 // app.use('/events', eventsCtrl);
@@ -58,6 +60,7 @@ app.use('/events', syncEventsCtrl);
 app.use('/sync/events', syncEventsCtrl);
 app.use('/users', passAcessTokens, usersCtrl);
 app.use('/outlook', outlookCtrl);
+app.use('/google', googleCtrl);
 
 // catch 404 and forward to error handler
 app.use(function (req, res, next) {
