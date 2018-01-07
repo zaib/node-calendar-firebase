@@ -146,15 +146,9 @@ router.get('/:username/sync', function (req, res) {
 					if (deltaLink !== undefined) {
 						// req.session.syncUrl = deltaLink;
 					}
-					let outlookEventList = outlookAuthHelper.parseOutlookResponse(response.body.value);
-					/*
-					_.forEach(result, function (event) {
-						// let eventKey = event.outlookEventId;
-						let eventKey = ref.push().key;
-						event.id = eventKey;
-						ref.child(`/${username}/events/${eventKey}`).update(event);
-					}); */
 
+					let outlookEventList = outlookAuthHelper.parseOutlookResponse(response.body.value);
+					
 					let filterStartDate = moment(startDate).unix();
 					let filterToDate = moment(endDate).unix();
 
@@ -162,12 +156,20 @@ router.get('/:username/sync', function (req, res) {
 					ref.child(`/${username}/events`).orderByChild("date").startAt(filterStartDate).endAt(filterToDate).once("value").then(function (snapshot) {
 						var snapshotVal = snapshot.val();
 						firebaseEventList = (snapshotVal) ? Object.values(snapshotVal) : [];
-
+						
 						_.forEach(outlookEventList, function (outlookEvent) {
 							let firebaseEvent = _.find(firebaseEventList, {
 								outlookEventId: outlookEvent.outlookEventId
 							});
-							let eventId = (firebaseEvent && firebaseEvent.id) ? firebaseEvent.id : ref.push().key;
+
+							let eventId;
+							if(firebaseEvent && firebaseEvent.id) {
+								eventId = firebaseEvent.id;
+							} else {
+								eventId = ref.push().key;
+								outlookEvent.source = 'outlook';
+							}
+
 							outlookEvent.id = eventId;
 							ref.child(`/${username}/events/${eventId}`).update(outlookEvent);
 						});
@@ -208,7 +210,7 @@ var createEvent = function (req, res) {
 	var newEvent = {
 		'Subject': eventData.subject,
 		'Body': {
-			'ContentType': 'HTML',
+			'ContentType': 'TEXT',
 			'Content': eventData.body
 		},
 		'Start': {
@@ -258,7 +260,7 @@ var updateEvent = function (req, res) {
 	var updatePayload = {
 		'Subject': eventData.subject,
 		'Body': {
-			'ContentType': 'HTML',
+			'ContentType': 'TEXT',
 			'Content': eventData.body
 		},
 		'Start': {

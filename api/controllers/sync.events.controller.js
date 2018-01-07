@@ -84,7 +84,7 @@ var createEvent = function createEvent(req, res) {
 	payload.fromTime = moment(payload.fromTime).unix();
 	payload.toTime = moment(payload.toTime).unix();
 	payload.source = 'connecpath';
-
+	
 	let userSettings = {};
 	let outlookEvent = {};
 	let firebaseEvent = {};
@@ -108,8 +108,8 @@ var createEvent = function createEvent(req, res) {
 				let newEvent = {
 					'Subject': eventData.subject,
 					'Body': {
-						'ContentType': 'TEXT',
-						'Content': (eventData.body) ? eventData.body : ""
+						'ContentType': 'Text',
+						'Content': (eventData.body) ? eventData.body : ''
 					},
 					'Start': {
 						'DateTime': outlookFromTime,

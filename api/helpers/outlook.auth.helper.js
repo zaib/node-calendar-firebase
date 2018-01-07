@@ -84,44 +84,35 @@ module.exports = {
 	},
 
 	parseOutlookResponse: function (data) {
-		var events = [];
-		var dateDifference, meetingDuration;
-
+		let eventsList = [];
 		if (data.length) {
-			_.forEach(data, function (item) {
-				dateDifference = moment(item.End.DateTime).diff(item.Start.DateTime);
-				meetingDuration = moment.utc(dateDifference).format("mm");
-				meetingDuration = parseInt(meetingDuration);
-				
-				events.push({
-					outlookEventId: item.Id,
-					subject: item.Subject,
-					startTime: item.Start.DateTime,
-					endTime: item.End.DateTime,
-					date: moment(item.Start.DateTime).format('YYYY-MM-DD'),
-					meetingDuration: meetingDuration,
-					location: item.Location.DisplayName,
-					type: 'appointment',
-					source: 'outlook'
+			_.forEach(data, function (event) {
+				eventsList.push({
+					outlookEventId: event.Id,
+					subject: event.Subject,
+					// body: event.Body.Content,					
+					fromTime: event.Start.DateTime,
+					toTime: event.End.DateTime,
+					date: moment(event.Start.DateTime, 'YYYY-MM-DD').unix(),
+					location: event.Location.DisplayName,
+					type: 'appointment'
 				});
 			});
 		}
-
-		return events;
+		return eventsList;
 	},
 	parseOutlookEvent: function (event) {
-		let parsedEvent = event;
+		let parsedEvent = {};
 		if (event) {
-			
 			parsedEvent = {
 				outlookEventId: event.Id,
 				subject: event.Subject,
-				body: event.Body.Content,
+				// body: event.Body.Content,
 				fromTime: event.Start.DateTime,
 				toTime: event.End.DateTime,
+				date: moment(event.Start.DateTime, 'YYYY-MM-DD').unix(),				
 				location: (event.Location && event.Location.DisplayName) ? event.Location.DisplayName: '',
-				type: 'appointment',
-				source: 'outlook'
+				type: 'appointment'
 			};
 		}
 		return parsedEvent;
