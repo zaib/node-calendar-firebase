@@ -3,9 +3,11 @@ var router = express.Router();
 var moment = require('moment');
 var _ = require('lodash');
 var async = require('async');
-var DEFAULT = require('./../../config/constants.js');
 
-var config = require('./../../config/config');
+var DEFAULT = require('./../../config/constants.js');
+const env = process.env.NODE_ENV || 'development';
+var config = require('./../../config/config')[env];
+
 var outlookAuthHelper = require('./../helpers/outlook.auth.helper');
 
 var outlook = require('node-outlook');

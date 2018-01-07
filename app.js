@@ -1,12 +1,12 @@
-var express = require('express');
-var path = require('path');
-var favicon = require('serve-favicon');
-var logger = require('morgan');
-var cookieParser = require('cookie-parser');
-var bodyParser = require('body-parser');
-var session = require('express-session');
+const express = require('express');
+const path = require('path');
+const favicon = require('serve-favicon');
+const logger = require('morgan');
+const cookieParser = require('cookie-parser');
+const bodyParser = require('body-parser');
+const session = require('express-session');
 
-var app = express();
+const app = express();
 
 // view engine setup
 app.set('views', path.join(__dirname, 'views'));
@@ -29,21 +29,39 @@ app.use(session({
 
 app.use(express.static(path.join(__dirname, 'public')));
 
-var index = require('./api/routes/index');
-var usersCtrl = require('./api/controllers/users.controller');
-var eventsCtrl = require('./api/controllers/events.controller');
-var syncEventsCtrl = require('./api/controllers/sync.events.controller');
-var outlookCtrl = require('./api/controllers/outlook.controller');
+
+const firebase = require('./config/connection.js');
+const ref = firebase.ref('users');
+
+const passAcessTokens = (req, res, next) => {
+	let username = req.headers.username;
+	ref.child(`/${username}/outlook`).once('value').then(function (snapshot) {
+		let snapshotVal = snapshot.val();
+		if(snapshotVal && snapshotVal.access_token) {
+			req.headers.access_token = snapshotVal.access_token;
+		}
+		next();
+	});
+};
+
+
+const index = require('./api/routes/index');
+const usersCtrl = require('./api/controllers/users.controller');
+const eventsCtrl = require('./api/controllers/events.controller');
+const syncEventsCtrl = require('./api/controllers/sync.events.controller');
+const outlookCtrl = require('./api/controllers/outlook.controller');
+
 
 app.use('/', index);
-app.use('/events', eventsCtrl);
+// app.use('/events', eventsCtrl);
+app.use('/events', syncEventsCtrl);
 app.use('/sync/events', syncEventsCtrl);
-app.use('/users', usersCtrl);
+app.use('/users', passAcessTokens, usersCtrl);
 app.use('/outlook', outlookCtrl);
 
 // catch 404 and forward to error handler
 app.use(function (req, res, next) {
-	var err = new Error('Not Found');
+	const err = new Error('Not Found');
 	err.status = 404;
 	next(err);
 });

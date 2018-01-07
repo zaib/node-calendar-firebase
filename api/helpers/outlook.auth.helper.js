@@ -1,5 +1,6 @@
 
-var config = require('./../../config/config');
+const env = process.env.NODE_ENV || 'development';
+var config = require('./../../config/config')[env];
 
 var clientId = config.outlook.clientId;
 var clientSecret = config.outlook.clientSecret;

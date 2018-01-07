@@ -13,12 +13,10 @@ const ref = firebase.ref('users');
 const payloadCheck = require('payload-validator');
 const eventSchema = {
 	subject: '', // '' means data type is string 
-	fromTime: 0, // 0 means data type is number
-	toTime: 0,
-	date: 0,
+	fromTime: '', // 0 means data type is number
+	toTime: '',
 	location: '',
-	type: '',
-	source: '',
+	type: ''
 };
 const requiredFields = [];
 const isNullValuesAllowed = false;
@@ -37,8 +35,8 @@ var getAllEvents = function getAllEvents(req, res) {
 
 		ref.child(`/${username}/events`).orderByChild("date").startAt(fromDate).endAt(toDate).once("value").then(function (snapshot) {
 			var snapshotVal = snapshot.val();
-			let events =  (snapshotVal) ? Object.values(snapshotVal) : [];
-			return res.json(events);			
+			let events = (snapshotVal) ? Object.values(snapshotVal) : [];
+			return res.json(events);
 		}).catch(function (err) {
 			return res.json(err);
 		});
@@ -72,23 +70,27 @@ var createEvent = function createEvent(req, res) {
 	payload.id = ref.push().key;
 	let eventId = payload.id;
 
-	// conver fromTime/toTime to unix timestamp
-	payload.date = moment(payload.fromTime, 'YYYY-MM-DD').unix();
-	payload.fromTime = moment(payload.fromTime).unix();
-	payload.toTime = moment(payload.toTime).unix();	
-
 	// payload validation
 	let schemaValidation = payloadCheck.validator(payload, eventSchema, requiredFields, isNullValuesAllowed);
 	if (!schemaValidation.success) {
 		return res.json(schemaValidation);
 	}
-	
+
+	// conver fromTime/toTime to unix timestamp
+	let outlookFromTime = moment(payload.fromTime).format(DEFAULT.outlookTimeFormat);
+	let outlookToTime = moment(payload.toTime).format(DEFAULT.outlookTimeFormat);
+
+	payload.date = moment(payload.fromTime, 'YYYY-MM-DD').unix();
+	payload.fromTime = moment(payload.fromTime).unix();
+	payload.toTime = moment(payload.toTime).unix();
+	payload.source = 'connecpath';
+
 	let userSettings = {};
 	let outlookEvent = {};
 	let firebaseEvent = {};
 
 	async.waterfall([
-		function(cb) {
+		function (cb) {
 			var username = req.params.username;
 			ref.child(`/${username}/settings`).once('value').then(function (snapshot) {
 				userSettings = snapshot.val();
@@ -106,19 +108,19 @@ var createEvent = function createEvent(req, res) {
 				let newEvent = {
 					'Subject': eventData.subject,
 					'Body': {
-						'ContentType': 'HTML',
+						'ContentType': 'TEXT',
 						'Content': (eventData.body) ? eventData.body : ""
 					},
 					'Start': {
-						'DateTime': eventData.fromTime,
+						'DateTime': outlookFromTime,
 						'TimeZone': (userSettings && userSettings.timezone) ? userSettings.timezone : DEFAULT.timezone,
 					},
 					'End': {
-						'DateTime': eventData.toTime,
-						'TimeZone': (userSettings && userSettings.timezone) ? userSettings.timezone : DEFAULT.timezone,						
+						'DateTime': outlookToTime,
+						'TimeZone': (userSettings && userSettings.timezone) ? userSettings.timezone : DEFAULT.timezone,
 					},
 					'Location': {
-						'DisplayName': (userSettings && userSettings.location) ? userSettings.location : '',	 
+						'DisplayName': (userSettings && userSettings.location) ? userSettings.location : '',
 					}
 				};
 
@@ -129,8 +131,8 @@ var createEvent = function createEvent(req, res) {
 				// return res.json(createEventParameters);
 
 				outlook.calendar.createEvent(createEventParameters, function (error, event) {
-					if(event.statusCode && event.statusCode !== 200) {
-						cb(event);					
+					if (event.statusCode && event.statusCode !== 200) {
+						cb(event);
 					} else {
 						outlookEvent = outlookAuthHelper.parseOutlookEvent(event);
 						cb(null, outlookEvent);
@@ -145,7 +147,7 @@ var createEvent = function createEvent(req, res) {
 			cb(null, event);
 		}
 	], function (error, data) {
-		if(error) {
+		if (error) {
 			return res.json(error);
 		} else {
 			let result = _.assign({}, firebaseEvent, outlookEvent);
@@ -161,28 +163,32 @@ var updateEvent = function updateEvent(req, res) {
 
 	let accessToken = req.headers.access_token || req.query.access_token;
 	let username = req.params.username;
-	
+
 	let payload = req.body;
 	payload.id = req.params.id;
 	let eventId = req.params.id;
-
-	// conver fromTime/toTime to unix timestamp
-	payload.date = moment(payload.fromTime, 'YYYY-MM-DD').unix();
-	payload.fromTime = moment(payload.fromTime).unix();
-	payload.toTime = moment(payload.toTime).unix();	
 
 	// payload validation
 	let schemaValidation = payloadCheck.validator(payload, eventSchema, requiredFields, isNullValuesAllowed);
 	if (!schemaValidation.success) {
 		return res.json(schemaValidation);
 	}
-	
+
+	// conver fromTime/toTime to unix timestamp
+	let outlookFromTime = moment(payload.fromTime).format(DEFAULT.outlookTimeFormat);
+	let outlookToTime = moment(payload.toTime).format(DEFAULT.outlookTimeFormat);
+
+	payload.date = moment(payload.fromTime, 'YYYY-MM-DD').unix();
+	payload.fromTime = moment(payload.fromTime).unix();
+	payload.toTime = moment(payload.toTime).unix();
+	payload.source = 'connecpath';	
+
 	let userSettings = {};
 	let outlookEvent = {};
 	let firebaseEvent = {};
 
 	async.waterfall([
-		function(cb) {
+		function (cb) {
 			ref.child(`/${username}`).once('value').then(function (snapshot) {
 				userSettings = snapshot.val();
 				cb(null, userSettings);
@@ -193,7 +199,7 @@ var updateEvent = function updateEvent(req, res) {
 			ref.child(`/${username}/events/${eventId}`).update(firebaseEvent);
 			cb(null, firebaseEvent);
 		},
-		function(event, cb) {
+		function (event, cb) {
 			ref.child(`/${username}/events/${eventId}`).once('value').then(function (snapshot) {
 				firebaseEvent = snapshot.val();
 				cb(null, firebaseEvent);
@@ -205,19 +211,19 @@ var updateEvent = function updateEvent(req, res) {
 				var updatePayload = {
 					'Subject': eventData.subject,
 					'Body': {
-						'ContentType': 'HTML',
+						'ContentType': 'TEXT',
 						'Content': eventData.body
 					},
 					'Start': {
-						'DateTime': eventData.fromTime,
+						'DateTime': outlookFromTime,
 						'TimeZone': (userSettings && userSettings.timezone) ? userSettings.timezone : DEFAULT.timezone,
 					},
 					'End': {
-						'DateTime': eventData.toTime,
-						'TimeZone': (userSettings && userSettings.timezone) ? userSettings.timezone : DEFAULT.timezone,						
+						'DateTime': outlookToTime,
+						'TimeZone': (userSettings && userSettings.timezone) ? userSettings.timezone : DEFAULT.timezone,
 					},
 					'Location': {
-						'DisplayName': (userSettings && userSettings.location) ? userSettings.location : '',	 
+						'DisplayName': (userSettings && userSettings.location) ? userSettings.location : '',
 					}
 				};
 
@@ -227,9 +233,11 @@ var updateEvent = function updateEvent(req, res) {
 					update: updatePayload
 				};
 				outlook.calendar.updateEvent(updateEventParameters, function (error, event) {
-					if(event.statusCode && event.statusCode !== 200) {
-						error = {message: 'error received while creating an event on outlook calendar.'};
-						cb(true, event);					
+					if (event.statusCode && event.statusCode !== 200) {
+						error = {
+							message: 'error received while creating an event on outlook calendar.'
+						};
+						cb(true, event);
 					} else {
 						outlookEvent = outlookAuthHelper.parseOutlookEvent(event);
 						cb(null, outlookEvent);
@@ -244,7 +252,7 @@ var updateEvent = function updateEvent(req, res) {
 			cb(null, event);
 		}
 	], function (error, data) {
-		if(error) {
+		if (error) {
 			return res.json(data);
 		} else {
 			let result = _.assign({}, firebaseEvent, outlookEvent);
