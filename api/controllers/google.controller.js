@@ -115,6 +115,20 @@ router.post('/:calendarId/add', function (req, res) {
     });
 });
 
+router.put('/:calendarId/:eventId', function (req, res) {
+
+    if (!req.session.access_token) return res.redirect('/auth');
+
+    var accessToken = req.session.access_token;
+    var calendarId = req.params.calendarId;
+    var text = req.query.text || 'Hello World';
+
+    gcal(accessToken).events.update(calendarId, eventId, text, {}, function (err, data) {
+        if (err) return res.send(500, err);
+        return res.redirect('/' + calendarId);
+    });
+});
+
 router.delete('/:calendarId/:eventId/remove', function (req, res) {
 
     if (!req.session.access_token) return res.redirect('/auth');
