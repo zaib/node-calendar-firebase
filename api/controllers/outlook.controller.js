@@ -85,7 +85,7 @@ router.get('/:username/sync', function (req, res) {
 		var email = (result && result.outlook && result.outlook.email) ? result.outlook.email : undefined;
 		var timezone = (result && result.settings && result.settings.timezone) ? result.settings.timezone : 'America/New_York';
 
-		if (token === undefined || email === undefined) {
+		if (!token || !email) {
 			return res.status(400).json({
 				error: 'bad Request. missing email address or access token.'
 			});
@@ -146,16 +146,35 @@ router.get('/:username/sync', function (req, res) {
 					if (deltaLink !== undefined) {
 						// req.session.syncUrl = deltaLink;
 					}
-
-					let result = outlookAuthHelper.parseOutlookResponse(response.body.value);
-
+					let outlookEventList = outlookAuthHelper.parseOutlookResponse(response.body.value);
+					/*
 					_.forEach(result, function (event) {
 						// let eventKey = event.outlookEventId;
 						let eventKey = ref.push().key;
 						event.id = eventKey;
 						ref.child(`/${username}/events/${eventKey}`).update(event);
+					}); */
+
+					let filterStartDate = moment(startDate).unix();
+					let filterToDate = moment(endDate).unix();
+
+					let firebaseEventList = [];
+					ref.child(`/${username}/events`).orderByChild("date").startAt(filterStartDate).endAt(filterToDate).once("value").then(function (snapshot) {
+						var snapshotVal = snapshot.val();
+						firebaseEventList = (snapshotVal) ? Object.values(snapshotVal) : [];
+
+						_.forEach(outlookEventList, function (outlookEvent) {
+							let firebaseEvent = _.find(firebaseEventList, {
+								outlookEventId: outlookEvent.outlookEventId
+							});
+							let eventId = (firebaseEvent && firebaseEvent.id) ? firebaseEvent.id : ref.push().key;
+							outlookEvent.id = eventId;
+							ref.child(`/${username}/events/${eventId}`).update(outlookEvent);
+						});
+						return res.json(outlookEventList);
+					}).catch(function (err) {
+						return res.json(err);
 					});
-					return res.json(result);
 				}
 			}
 		});
@@ -216,7 +235,7 @@ var createEvent = function (req, res) {
 		} else {
 			let outlookEvent = outlookAuthHelper.parseOutlookEvent(event);
 			eventData.outlookEventId = outlookEvent.outlookEventId;
-			ref.child(`/${username}/events/${eventId}`).update(eventData).then(function(result){
+			ref.child(`/${username}/events/${eventId}`).update(eventData).then(function (result) {
 				return res.json(outlookEvent);
 			});
 		}
@@ -226,7 +245,7 @@ router.post('/:username/events', createEvent);
 
 var updateEvent = function (req, res) {
 	var eventId = req.params.id;
-	var username = req.params.username;	
+	var username = req.params.username;
 	var access_token = req.headers.access_token || req.query.access_token;
 
 	if (!eventId || !access_token) {
@@ -254,10 +273,10 @@ var updateEvent = function (req, res) {
 			'DisplayName': eventData.location
 		},
 		'Organizer': {
-            'EmailAddress': {
-                'Name': eventId,
-            }
-        }
+			'EmailAddress': {
+				'Name': eventId,
+			}
+		}
 	};
 
 	var updateEventParameters = {
@@ -279,7 +298,7 @@ router.put('/:username/events/:id', updateEvent);
 
 router.delete('/:username/events/:id', function (req, res) {
 	var eventId = req.params.id;
-	var username = req.params.username;		
+	var username = req.params.username;
 	var access_token = req.headers.access_token || req.query.access_token;
 
 	if (!eventId || access_token === undefined) {
@@ -322,7 +341,7 @@ router.delete('/:username/events/:id', function (req, res) {
 			}
 		}
 	], function (error, data) {
-		if(error) {
+		if (error) {
 			return res.json(data);
 		} else {
 			return res.json(data);
