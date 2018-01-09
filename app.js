@@ -7,6 +7,7 @@ const bodyParser = require('body-parser');
 const session = require('express-session');
 
 const app = express();
+const passport = require('passport');
 
 // view engine setup
 app.set('views', path.join(__dirname, 'views'));
@@ -26,6 +27,7 @@ app.use(session({
 	saveUninitialized: false
 }));
 
+app.use(passport.initialize());
 
 app.use(express.static(path.join(__dirname, 'public')));
 
@@ -85,6 +87,7 @@ const usersCtrl = require('./api/controllers/users.controller');
 const eventsCtrl = require('./api/controllers/events.controller');
 const syncEventsCtrl = require('./api/controllers/sync.events.controller');
 const outlookCtrl = require('./api/controllers/outlook.controller');
+const googleCtrl = require('./api/controllers/google.controller');
 
 app.use('/', index);
 // app.use('/events', eventsCtrl);
@@ -92,6 +95,7 @@ app.use('/events', passAcessTokens, syncEventsCtrl);
 app.use('/sync/events', passAcessTokens, syncEventsCtrl);
 app.use('/users', passAcessTokens, usersCtrl);
 app.use('/outlook', outlookCtrl);
+app.use('/google', googleCtrl);
 
 // catch 404 and forward to error handler
 app.use(function (req, res, next) {

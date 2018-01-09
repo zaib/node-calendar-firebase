@@ -13,6 +13,10 @@ module.exports = {
 			"client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/firebase-adminsdk-sj1xa%40connecpath.iam.gserviceaccount.com"
 		},
 		databaseURL: 'https://connecpath.firebaseio.com',
+		google: {
+			consumer_key: '112038682100-s4e06j3ikepf2q54u1ni1uoum3inuiju.apps.googleusercontent.com',
+			consumer_secret: '85i60tcUn70KeHnIq-gucKC3'
+		},
 		outlook: {
 			clientId: '3fe26a67-390c-421f-9f81-484cdc69ac0e',
 			clientSecret: 'cgsgjVRBDS2037$_{gsIM2#',
