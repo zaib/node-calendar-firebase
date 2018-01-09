@@ -1,4 +1,3 @@
-
 const env = process.env.NODE_ENV || 'development';
 var config = require('./../../config/config')[env];
 
@@ -91,10 +90,10 @@ module.exports = {
 					outlookEventId: event.Id,
 					subject: event.Subject,
 					// body: event.Body.Content,					
-					fromTime: event.Start.DateTime,
-					toTime: event.End.DateTime,
+					fromTime: moment(event.Start.DateTime).unix(),
+					toTime: moment(event.End.DateTime).unix(),
 					date: moment(event.Start.DateTime, 'YYYY-MM-DD').unix(),
-					location: event.Location.DisplayName,
+					location: (event.Location && event.Location.DisplayName) ? event.Location.DisplayName: '',				
 					type: 'appointment'
 				});
 			});
@@ -108,8 +107,8 @@ module.exports = {
 				outlookEventId: event.Id,
 				subject: event.Subject,
 				// body: event.Body.Content,
-				fromTime: event.Start.DateTime,
-				toTime: event.End.DateTime,
+				fromTime: moment(event.Start.DateTime).unix(),
+				toTime: moment(event.End.DateTime).unix(),
 				date: moment(event.Start.DateTime, 'YYYY-MM-DD').unix(),				
 				location: (event.Location && event.Location.DisplayName) ? event.Location.DisplayName: '',
 				type: 'appointment'

@@ -3,23 +3,64 @@
 <head>
 	<meta content="IE=edge" http-equiv="X-UA-Compatible">
 	<meta charset="utf-8">
-	<title>Login</title>
+	<title>Dashboard</title>
 	<link type="text/css" rel="stylesheet" href="//appsforoffice.microsoft.com/fabric/1.0/fabric.min.css">
-    <link type="text/css" rel="stylesheet" href="//appsforoffice.microsoft.com/fabric/1.0/fabric.components.min.css">
-    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-alpha.6/css/bootstrap.min.css" integrity="sha384-rwoIResjU2yc3z8GV/NPeZWAv56rSmLldC3R/AZzGRnGxQQKnKkoFVhFQhNUwEyJ" crossorigin="anonymous">
+	<link type="text/css" rel="stylesheet" href="//appsforoffice.microsoft.com/fabric/1.0/fabric.components.min.css">
+
+	<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta.3/css/bootstrap.min.css" integrity="sha384-Zug+QiDoJOrZ5t4lssLdxGhVrurbmBWopoEl+M6BdEfwnCJZtKxi1KgxUyJq13dy"
+	crossorigin="anonymous">
+	<link type="text/css" rel="stylesheet" href="/angularjs-toast/angularjs-toast.min.css">
+	<link type="text/css" rel="stylesheet" href="/jquery-datetimepicker/build/jquery.datetimepicker.min.css">
+	
 	<link type="text/css" rel="stylesheet" href="/stylesheets/style.css">
+
+	<script src="https://code.jquery.com/jquery-3.2.1.slim.min.js" integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN"
+	crossorigin="anonymous"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js" integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q"
+	crossorigin="anonymous"></script>
+	<script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta.3/js/bootstrap.min.js" integrity="sha384-a5N7Y/aK3qNeh15eJKGWxsqtnX/wWdSZSKp+81YjTmS15nvnvxKHuzaWwXHDli+4"
+	crossorigin="anonymous"></script>
+
+	<script src="//ajax.googleapis.com/ajax/libs/angularjs/1.5.6/angular.min.js"></script>
+	<script src="//ajax.googleapis.com/ajax/libs/angularjs/1.5.6/angular-route.js"></script>
+	<script src="//ajax.googleapis.com/ajax/libs/angularjs/1.5.6/angular-sanitize.min.js"></script>
+	<script src="//ajax.googleapis.com/ajax/libs/angularjs/1.5.6/angular-animate.min.js"></script>
+	<script src="/angularjs-toast/angularjs-toast.min.js"></script>
+	<script src="https://cdn.jsdelivr.net/npm/moment@2.20.1/moment.min.js"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.17.4/lodash.js"></script>
+	<script src="/jquery-datetimepicker/build/jquery.datetimepicker.full.min.js"></script>
+	
+
+
+	<script src="/javascripts/app.js"></script>
+
 </head>
 
-<body>
-	<div id="main-content" class="ms-Grid">
+<body ng-app="myApp">
+	<div id="main-content" class="ms-Grid" ng-controller="myCtrl">
 		<div class="ms-Grid-row">
 			<div id="title-banner" class="ms-font-su">Outlook Calendar Sync Demo</div>
 		</div>
 		<div id="body-content" class="ms-Grid-row">
-            <h1>Welcome! <%= data.username %></h1>
-            <p>Your oulook calendar has synced with connectpath now.</p>
-        </div>
+			<h1>Welcome!
+				<%= data.username %>
+			</h1>
+			<p>Your oulook calendar has synced with connectpath now.</p>
+
+			<div ng-view class="container-fluid"></div>
+
+		</div>
 	</div>
+
+
+	<script>
+		$(document).ready(function () {
+			jQuery('#fromtimepicker').datetimepicker();
+			jQuery('#totimepicker').datetimepicker();
+		});
+
+	</script>
+
 </body>
 
 </html>

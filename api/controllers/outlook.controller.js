@@ -18,7 +18,6 @@ var ref = firebase.ref('users');
 router.get('/authorize', function (req, res) {
 	var authCode = req.query.code;
 	if (authCode) {
-		console.log(authCode);
 		outlookAuthHelper.getTokenFromCode(authCode, tokenReceived, req, res);
 	} else {
 		return res.status(500).json({
@@ -32,13 +31,6 @@ function tokenReceived(req, res, error, token) {
 		console.log('ERROR getting token:' + error);
 		return res.json('ERROR getting token: ' + error);
 	} else {
-		// save tokens in session
-		/* req.session.outlook = {};
-        req.session.access_token = token.token.access_token;
-		req.session.refresh_token = token.token.refresh_token;
-        req.session.email = outlookAuthHelper.getEmailFromIdToken(token.token.id_token); */
-		// res.redirect('/logincomplete');
-
 		var auth = {};
 		auth.access_token = token.token.access_token;
 		auth.refresh_token = token.token.refresh_token;
@@ -60,9 +52,10 @@ function tokenReceived(req, res, error, token) {
 				var stringifyData = JSON.stringify(payload.outlook);
 				if (username) {
 					ref.child(`/${username}`).update(payload);
-					var redirectURL = config.apps.web.redirectUri + `?username=${username}&user=${stringifyData}`;
-					// res.redirect(redirectURL);
-					return res.json(payload.outlook);
+					// var redirectURL = config.apps.web.redirectUri + `?username=${username}&user=${stringifyData}`;
+					var redirectURL = config.apps.web.redirectUri;
+					res.redirect(redirectURL);
+					// return res.json(payload.outlook);
 				} else {
 					return res.status(500).json({
 						error: 'email address does not exist in our database.'

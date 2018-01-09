@@ -1,0 +1,65 @@
+<div class="row">
+	<div class="col-sm-7">
+		<table class="table">
+			<thead>
+				<tr>
+					<th scope="col">#</th>
+					<th scope="col">Subject</th>
+					<th scope="col">Location</th>
+					<th scope="col">Start Time</th>
+					<th scope="col">End Time</th>
+					<th scope="col">Actions</th>
+				</tr>
+			</thead>
+			<tbody>
+				<tr ng-repeat="event in eventsList track by $index">
+					<th scope="row">{{$index + 1}}</th>
+					<td>{{event.subject}}</td>
+					<td>{{event.location}}</td>
+					<td>{{event.fromTime}}</td>
+					<td>{{event.toTime}}</td>
+					<td>
+						<button type="button" class="btn btn-success" ng-click="setCurrentEvent(event)">Edit</button>
+						<button type="button" class="btn btn-danger" ng-click="deleteEvent(event);">Delete</button>
+					</td>
+				</tr>
+			</tbody>
+		</table>
+	</div>
+	<div class="col-sm">
+        <h3>Add/Edit Event</h3>
+		<form>
+			<div class="form-group">
+				<label for="eventSubject">Subject</label>
+				<input type="text" class="form-control" id="eventSubject" placeholder="Enter Event Title" ng-model="currentEvent.subject" />
+            </div>
+            
+			<div class="form-group">
+                <label for="eventLocation">Location</label>
+                <input type="text" class="form-control" id="eventLocation" placeholder="Enter Event Location"  ng-model="currentEvent.location" />
+            </div>
+			<div class="form-group">
+				<label for="fromTime">Start Time</label>
+				<input type="text" class="form-control" id="fromTime" placeholder="Start Time"  ng-model="currentEvent.fromTime" />
+			</div>
+
+			<div class="form-group">
+				<label for="toTime">End Time</label>
+				<input type="text" class="form-control" id="toTime" placeholder="End Time"  ng-model="currentEvent.toTime" />
+			</div>
+			<div class="form-group">
+				<label for="eventType">Select Event Type</label>
+				<select class="form-control" id="eventType"  ng-model="currentEvent.type">
+					<option value="">Select Type</option>
+					<option value="appointment">Appointment</option>
+					<option value="walkin">Walk-in</option>
+				</select>
+			</div>
+
+			<button type="submit" class="btn btn-primary" ng-click="upsertEvent(currentEvent)">Save</button>
+			<button type="button" class="btn btn-success" ng-click="resetCurrentEvent()">Reset</button>
+
+        </form>
+        <code>{{currentEvent}}</code>
+	</div>
+</div>

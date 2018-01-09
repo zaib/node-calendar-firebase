@@ -1,0 +1,95 @@
+{
+  "_from": "angularjs-toast",
+  "_id": "angularjs-toast@1.0.11",
+  "_inBundle": false,
+  "_integrity": "sha512-maFmOEQFgRFFZ7cb7iP1HYvigDhiEtuGnu9JSMuWYQuor7wY8IRucyJ47NlYqubDzBDqo+PCtF4M4oN5GDHoOw==",
+  "_location": "/angularjs-toast",
+  "_phantomChildren": {},
+  "_requested": {
+    "type": "tag",
+    "registry": true,
+    "raw": "angularjs-toast",
+    "name": "angularjs-toast",
+    "escapedName": "angularjs-toast",
+    "rawSpec": "",
+    "saveSpec": null,
+    "fetchSpec": "latest"
+  },
+  "_requiredBy": [
+    "#USER",
+    "/"
+  ],
+  "_resolved": "https://registry.npmjs.org/angularjs-toast/-/angularjs-toast-1.0.11.tgz",
+  "_shasum": "bbcca35c1d1af713bd8425bb9e489002af0c8a2d",
+  "_spec": "angularjs-toast",
+  "_where": "/Users/jahanzaib_aslam/Documents/workplace/zaib-github/node-calendar-firebase",
+  "author": {
+    "name": "Sibiraj-S"
+  },
+  "bugs": {
+    "url": "https://github.com/Sibiraj-S/angularjs-toast/issues"
+  },
+  "bundleDependencies": false,
+  "config": {
+    "commitizen": {
+      "path": "node_modules/cz-conventional-changelog"
+    }
+  },
+  "deprecated": false,
+  "description": "A Simple toast notification service for AngularJS pages",
+  "devDependencies": {
+    "angular": "^1.6.7",
+    "angular-animate": "^1.6.7",
+    "angular-sanitize": "^1.6.7",
+    "commitizen": "^2.9.6",
+    "cz-conventional-changelog": "^2.1.0",
+    "delete-empty": "^1.0.1",
+    "grunt": "^1.0.1",
+    "grunt-coffeelint": "^0.0.16",
+    "grunt-contrib-coffee": "^2.0.0",
+    "grunt-contrib-concat": "^1.0.1",
+    "grunt-contrib-connect": "^1.0.2",
+    "grunt-contrib-cssmin": "^2.2.1",
+    "grunt-contrib-sass": "^1.0.0",
+    "grunt-contrib-uglify": "^3.2.1",
+    "grunt-contrib-watch": "^1.0.0",
+    "grunt-ng-annotate": "^3.0.0",
+    "husky": "^0.14.3",
+    "load-grunt-tasks": "^3.5.2"
+  },
+  "homepage": "https://github.com/Sibiraj-S/angularjs-toast#readme",
+  "keywords": [
+    "angularjs-notify",
+    "notification",
+    "angularjs",
+    "notify",
+    "angularjs-toast",
+    "toast-notification"
+  ],
+  "license": "MIT",
+  "name": "angularjs-toast",
+  "peerDependencies": {
+    "angular": ">=1.6.0",
+    "angular-animate": ">=1.6.0",
+    "angular-sanitize": ">=1.6.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Sibiraj-S/angularjs-toast.git"
+  },
+  "scripts": {
+    "build": "grunt build",
+    "cz": "git-cz",
+    "develop": "grunt develop",
+    "lint": "grunt coffeelint",
+    "postbuild": "sh ./scripts/postbuild.sh",
+    "prebuild": "sh ./scripts/prebuild.sh",
+    "precommit": "yarn run lint",
+    "prerelease": "yarn run build",
+    "release": "sh ./scripts/release.sh",
+    "start": "grunt serve",
+    "test": "yarn run lint",
+    "watch": "grunt watch"
+  },
+  "version": "1.0.11"
+}

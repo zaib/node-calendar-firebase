@@ -15,7 +15,6 @@ const eventSchema = {
 	subject: '', // '' means data type is string 
 	fromTime: '', // 0 means data type is number
 	toTime: '',
-	location: '',
 	type: ''
 };
 const requiredFields = [];
@@ -43,7 +42,8 @@ var getAllEvents = function getAllEvents(req, res) {
 
 	} else {
 		ref.child(`/${username}/events`).once('value').then(function (snapshot) {
-			let events = Object.values(snapshot.val());
+			var snapshotVal = snapshot.val();			
+			let events = (snapshotVal) ? Object.values(snapshotVal) : [];
 			return res.json(events);
 		}).catch(function (err) {
 			return res.json(err);
@@ -73,7 +73,7 @@ var createEvent = function createEvent(req, res) {
 	// payload validation
 	let schemaValidation = payloadCheck.validator(payload, eventSchema, requiredFields, isNullValuesAllowed);
 	if (!schemaValidation.success) {
-		return res.json(schemaValidation);
+		return res.status(500).json(schemaValidation);
 	}
 
 	// conver fromTime/toTime to unix timestamp
@@ -120,7 +120,7 @@ var createEvent = function createEvent(req, res) {
 						'TimeZone': (userSettings && userSettings.timezone) ? userSettings.timezone : DEFAULT.timezone,
 					},
 					'Location': {
-						'DisplayName': (userSettings && userSettings.location) ? userSettings.location : '',
+						'DisplayName': (eventData.location) ? eventData.location : userSettings.location,
 					}
 				};
 
@@ -154,7 +154,6 @@ var createEvent = function createEvent(req, res) {
 			return res.json(result);
 		}
 	});
-
 };
 router.post('/:username', createEvent);
 
@@ -163,15 +162,16 @@ var updateEvent = function updateEvent(req, res) {
 
 	let accessToken = req.headers.access_token || req.query.access_token;
 	let username = req.params.username;
-
-	let payload = req.body;
+	
+	let payload = {};
+	payload = req.body;
 	payload.id = req.params.id;
 	let eventId = req.params.id;
 
 	// payload validation
 	let schemaValidation = payloadCheck.validator(payload, eventSchema, requiredFields, isNullValuesAllowed);
 	if (!schemaValidation.success) {
-		return res.json(schemaValidation);
+		return res.status(500).json(schemaValidation);
 	}
 
 	// conver fromTime/toTime to unix timestamp
@@ -182,11 +182,10 @@ var updateEvent = function updateEvent(req, res) {
 	payload.fromTime = moment(payload.fromTime).unix();
 	payload.toTime = moment(payload.toTime).unix();
 	payload.source = 'connecpath';	
-
+	
 	let userSettings = {};
 	let outlookEvent = {};
 	let firebaseEvent = {};
-
 	async.waterfall([
 		function (cb) {
 			ref.child(`/${username}`).once('value').then(function (snapshot) {
@@ -223,7 +222,7 @@ var updateEvent = function updateEvent(req, res) {
 						'TimeZone': (userSettings && userSettings.timezone) ? userSettings.timezone : DEFAULT.timezone,
 					},
 					'Location': {
-						'DisplayName': (userSettings && userSettings.location) ? userSettings.location : '',
+						'DisplayName': (userSettings && userSettings.location) ? userSettings.location : 'Default Location',
 					}
 				};
 
@@ -232,6 +231,7 @@ var updateEvent = function updateEvent(req, res) {
 					eventId: eventData.outlookEventId,
 					update: updatePayload
 				};
+				
 				outlook.calendar.updateEvent(updateEventParameters, function (error, event) {
 					if (event.statusCode && event.statusCode !== 200) {
 						error = {
@@ -239,6 +239,8 @@ var updateEvent = function updateEvent(req, res) {
 						};
 						cb(true, event);
 					} else {
+						console.console.log(event);
+						
 						outlookEvent = outlookAuthHelper.parseOutlookEvent(event);
 						cb(null, outlookEvent);
 					}
@@ -278,7 +280,7 @@ var deleteEvent = function upsertEvent(req, res) {
 			});
 		},
 		function (event, cb) {
-			if (accessToken) {
+			if (accessToken && event.outlookEventId) {
 				var deleteEventParameters = {
 					token: accessToken,
 					eventId: event.outlookEventId

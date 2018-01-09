@@ -1,6 +1,9 @@
+
+const env = process.env.NODE_ENV || 'development';
+var config = require('./../../config/config')[env];
+
 var express = require('express');
 var router = express.Router();
-var config = require('./../../config/config');
 var authHelper = require('./../helpers/outlook.auth.helper');
 var outlook = require('node-outlook');
 var moment = require('moment');

@@ -33,12 +33,47 @@ app.use(express.static(path.join(__dirname, 'public')));
 const firebase = require('./config/connection.js');
 const ref = firebase.ref('users');
 
+const moment = require('moment');
+const async = require('async');
+var rp = require('request-promise');
+
 const passAcessTokens = (req, res, next) => {
 	let username = req.headers.username;
-	ref.child(`/${username}/outlook`).once('value').then(function (snapshot) {
-		let snapshotVal = snapshot.val();
-		if(snapshotVal && snapshotVal.access_token) {
-			req.headers.access_token = snapshotVal.access_token;
+	let isOutlookTokenExpired = false;
+	async.waterfall([
+		function (cb) {
+			ref.child(`/${username}/outlook`).once('value').then(function (snapshot) {
+				let snapshotVal = snapshot.val();
+				isOutlookTokenExpired = moment(new Date()).isAfter(snapshotVal.expires_at);
+				cb(null, snapshotVal);
+			}).catch(function(err) {
+				cb(err);
+			});
+		},
+		function (outlook, cb) {
+			if (isOutlookTokenExpired) {
+				let refreshTokenUrl = req.protocol + '://' + req.get('host') + `/outlook/${username}/refreshtoken`;
+				let options = {
+					uri: refreshTokenUrl,
+					headers: {
+						refresh_token: outlook.refresh_token
+					}
+				};
+				rp(options)
+					.then(function (result) {
+						let refreshOutlookToken = result;
+						cb(null, refreshOutlookToken);				
+					})
+					.catch(function (err) {
+						cb(err);
+					});
+			} else {
+				cb(null, outlook);
+			}
+		}
+	], function (err, outlook) {
+		if(outlook && outlook.access_token) {
+			req.headers.access_token = outlook.access_token;
 		}
 		next();
 	});
@@ -51,11 +86,10 @@ const eventsCtrl = require('./api/controllers/events.controller');
 const syncEventsCtrl = require('./api/controllers/sync.events.controller');
 const outlookCtrl = require('./api/controllers/outlook.controller');
 
-
 app.use('/', index);
 // app.use('/events', eventsCtrl);
-app.use('/events', syncEventsCtrl);
-app.use('/sync/events', syncEventsCtrl);
+app.use('/events', passAcessTokens, syncEventsCtrl);
+app.use('/sync/events', passAcessTokens, syncEventsCtrl);
 app.use('/users', passAcessTokens, usersCtrl);
 app.use('/outlook', outlookCtrl);
 
