@@ -3,6 +3,7 @@ const router = express.Router();
 const moment = require('moment');
 const _ = require('lodash');
 const async = require('async');
+var gcal = require('google-calendar');
 const outlook = require('node-outlook');
 const outlookAuthHelper = require('./../helpers/outlook.auth.helper');
 const DEFAULT = require('./../../config/constants.js');
@@ -21,7 +22,7 @@ const requiredFields = [];
 const isNullValuesAllowed = false;
 
 
-var getAllEvents = function getAllEvents(req, res) {
+const getAllEvents = function getAllEvents(req, res) {
 	let username = req.params.username;
 
 	let fromDate = req.query.fromDate;
@@ -33,7 +34,7 @@ var getAllEvents = function getAllEvents(req, res) {
 		toDate = moment(toDate).unix();
 
 		ref.child(`/${username}/events`).orderByChild("date").startAt(fromDate).endAt(toDate).once("value").then(function (snapshot) {
-			var snapshotVal = snapshot.val();
+			let snapshotVal = snapshot.val();
 			let events = (snapshotVal) ? Object.values(snapshotVal) : [];
 			return res.json(events);
 		}).catch(function (err) {
@@ -42,7 +43,7 @@ var getAllEvents = function getAllEvents(req, res) {
 
 	} else {
 		ref.child(`/${username}/events`).once('value').then(function (snapshot) {
-			var snapshotVal = snapshot.val();			
+			let snapshotVal = snapshot.val();
 			let events = (snapshotVal) ? Object.values(snapshotVal) : [];
 			return res.json(events);
 		}).catch(function (err) {
@@ -52,7 +53,7 @@ var getAllEvents = function getAllEvents(req, res) {
 };
 router.get('/:username', getAllEvents);
 
-var getEventDetail = function getEventDetail(req, res) {
+const getEventDetail = function getEventDetail(req, res) {
 	let username = req.params.username;
 	let eventKey = req.params.id;
 	ref.child(`/${username}/events/${eventKey}`).once('value').then(function (response) {
@@ -61,7 +62,9 @@ var getEventDetail = function getEventDetail(req, res) {
 };
 router.get('/:username/:id', getEventDetail);
 
-var createEvent = function createEvent(req, res) {
+const createEvent = function createEvent(req, res) {
+
+	// return res.json(req.headers);
 
 	let accessToken = req.headers.access_token || req.query.access_token;
 	let username = req.params.username;
@@ -77,30 +80,24 @@ var createEvent = function createEvent(req, res) {
 	}
 
 	// conver fromTime/toTime to unix timestamp
-	let outlookFromTime = moment(payload.fromTime).format(DEFAULT.outlookTimeFormat);
-	let outlookToTime = moment(payload.toTime).format(DEFAULT.outlookTimeFormat);
+	let formatedFromTime = moment(payload.fromTime).format(DEFAULT.outlookTimeFormat);
+	let formatedToTime = moment(payload.toTime).format(DEFAULT.outlookTimeFormat);
 
 	payload.date = moment(payload.fromTime, 'YYYY-MM-DD').unix();
 	payload.fromTime = moment(payload.fromTime).unix();
 	payload.toTime = moment(payload.toTime).unix();
 	payload.source = 'connecpath';
-	
+
 	let userSettings = {};
 	let outlookEvent = {};
-	let firebaseEvent = {};
+	let firebaseEvent = payload;
 
 	async.waterfall([
 		function (cb) {
-			var username = req.params.username;
 			ref.child(`/${username}/settings`).once('value').then(function (snapshot) {
 				userSettings = snapshot.val();
-				cb(null, userSettings);
+				cb(null, firebaseEvent);
 			});
-		},
-		function (user, cb) {
-			firebaseEvent = payload;
-			ref.child(`/${username}/events/${eventId}`).set(firebaseEvent);
-			cb(null, firebaseEvent);
 		},
 		function (event, cb) {
 			if (accessToken) {
@@ -112,11 +109,11 @@ var createEvent = function createEvent(req, res) {
 						'Content': (eventData.body) ? eventData.body : ''
 					},
 					'Start': {
-						'DateTime': outlookFromTime,
+						'DateTime': formatedFromTime,
 						'TimeZone': (userSettings && userSettings.timezone) ? userSettings.timezone : DEFAULT.timezone,
 					},
 					'End': {
-						'DateTime': outlookToTime,
+						'DateTime': formatedToTime,
 						'TimeZone': (userSettings && userSettings.timezone) ? userSettings.timezone : DEFAULT.timezone,
 					},
 					'Location': {
@@ -128,13 +125,12 @@ var createEvent = function createEvent(req, res) {
 					token: accessToken,
 					event: newEvent
 				};
-				// return res.json(createEventParameters);
 
-				outlook.calendar.createEvent(createEventParameters, function (error, event) {
+				outlook.calendar.createEvent(createEventParameters, function (error, data) {
 					if (event.statusCode && event.statusCode !== 200) {
-						cb(event);
+						cb(data);
 					} else {
-						outlookEvent = outlookAuthHelper.parseOutlookEvent(event);
+						outlookEvent = outlookAuthHelper.parseOutlookEvent(data);
 						cb(null, outlookEvent);
 					}
 				});
@@ -143,9 +139,57 @@ var createEvent = function createEvent(req, res) {
 			}
 		},
 		function (event, cb) {
-			ref.child(`/${username}/events/${eventId}`).update(event);
+			let googleToken = req.headers.google.access_token;
+			let calendarId = req.headers.google.email;
+			if (googleToken && calendarId) {
+				let payload = {
+					'summary': event.subject,
+					'location': event.location,
+					'description': event.body,
+					'start': {
+						'dateTime': formatedFromTime,
+						'timeZone': (userSettings && userSettings.timezone) ? userSettings.timezone : DEFAULT.timezone,
+					},
+					'end': {
+						'dateTime': formatedToTime,
+						'timeZone': (userSettings && userSettings.timezone) ? userSettings.timezone : DEFAULT.timezone,
+					},
+					// 'recurrence': ['RRULE:FREQ=DAILY;COUNT=2'],
+					'recurrence': [],
+					'attendees': [{
+						'email': calendarId
+					}],
+					'reminders': {
+						'useDefault': false,
+						'overrides': [{
+								'method': 'email',
+								'minutes': 24 * 60
+							},
+							{
+								'method': 'popup',
+								'minutes': 10
+							},
+						],
+					},
+				};
+				gcal(googleToken).events.insert(calendarId, payload, {}, function (err, data) {
+					if (err) {
+						cb(err);
+					} else {
+						event.googleEventId = data.id;
+						cb(null, event);
+					}
+				});
+			} else {
+				cb(null, event);
+			}
+		},
+		function (event, cb) {
+			event.id = eventId;
+			ref.child(`/${username}/events/${eventId}`).set(event);
+			firebaseEvent = event;
 			cb(null, event);
-		}
+		},
 	], function (error, data) {
 		if (error) {
 			return res.json(error);
@@ -158,11 +202,11 @@ var createEvent = function createEvent(req, res) {
 router.post('/:username', createEvent);
 
 
-var updateEvent = function updateEvent(req, res) {
+const updateEvent = function updateEvent(req, res) {
 
 	let accessToken = req.headers.access_token || req.query.access_token;
 	let username = req.params.username;
-	
+
 	let payload = {};
 	payload = req.body;
 	payload.id = req.params.id;
@@ -175,38 +219,35 @@ var updateEvent = function updateEvent(req, res) {
 	}
 
 	// conver fromTime/toTime to unix timestamp
-	let outlookFromTime = moment(payload.fromTime).format(DEFAULT.outlookTimeFormat);
-	let outlookToTime = moment(payload.toTime).format(DEFAULT.outlookTimeFormat);
+	let formatedFromTime = moment(payload.fromTime).format(DEFAULT.outlookTimeFormat);
+	let formatedToTime = moment(payload.toTime).format(DEFAULT.outlookTimeFormat);
 
 	payload.date = moment(payload.fromTime, 'YYYY-MM-DD').unix();
 	payload.fromTime = moment(payload.fromTime).unix();
 	payload.toTime = moment(payload.toTime).unix();
-	payload.source = 'connecpath';	
+	// payload.source = 'connecpath';
+	
+	let eventData = payload;
 	
 	let userSettings = {};
 	let outlookEvent = {};
 	let firebaseEvent = {};
+	
 	async.waterfall([
 		function (cb) {
-			ref.child(`/${username}`).once('value').then(function (snapshot) {
+			ref.child(`/${username}/settings`).once('value').then(function (snapshot) {
 				userSettings = snapshot.val();
 				cb(null, userSettings);
 			});
 		},
 		function (user, cb) {
-			firebaseEvent = payload;
-			ref.child(`/${username}/events/${eventId}`).update(firebaseEvent);
-			cb(null, firebaseEvent);
-		},
-		function (event, cb) {
 			ref.child(`/${username}/events/${eventId}`).once('value').then(function (snapshot) {
 				firebaseEvent = snapshot.val();
 				cb(null, firebaseEvent);
 			});
 		},
 		function (event, cb) {
-			if (accessToken) {
-				let eventData = event;
+			if (accessToken && firebaseEvent.outlookEventId) {
 				var updatePayload = {
 					'Subject': eventData.subject,
 					'Body': {
@@ -214,15 +255,15 @@ var updateEvent = function updateEvent(req, res) {
 						'Content': eventData.body
 					},
 					'Start': {
-						'DateTime': outlookFromTime,
+						'DateTime': formatedFromTime,
 						'TimeZone': (userSettings && userSettings.timezone) ? userSettings.timezone : DEFAULT.timezone,
 					},
 					'End': {
-						'DateTime': outlookToTime,
+						'DateTime': formatedToTime,
 						'TimeZone': (userSettings && userSettings.timezone) ? userSettings.timezone : DEFAULT.timezone,
 					},
 					'Location': {
-						'DisplayName': (userSettings && userSettings.location) ? userSettings.location : 'Default Location',
+						'DisplayName': (eventData.location) ? eventData.location : userSettings.location,						
 					}
 				};
 
@@ -231,18 +272,16 @@ var updateEvent = function updateEvent(req, res) {
 					eventId: eventData.outlookEventId,
 					update: updatePayload
 				};
-				
+
 				outlook.calendar.updateEvent(updateEventParameters, function (error, event) {
 					if (event.statusCode && event.statusCode !== 200) {
 						error = {
-							message: 'error received while creating an event on outlook calendar.'
+							message: 'error received while updating an event on outlook calendar.'
 						};
 						cb(true, event);
 					} else {
-						console.console.log(event);
-						
-						outlookEvent = outlookAuthHelper.parseOutlookEvent(event);
-						cb(null, outlookEvent);
+						// outlookEvent = outlookAuthHelper.parseOutlookEvent(event);
+						cb(null, event);
 					}
 				});
 			} else {
@@ -250,15 +289,61 @@ var updateEvent = function updateEvent(req, res) {
 			}
 		},
 		function (event, cb) {
-			ref.child(`/${username}/events/${eventId}`).update(event);
-			cb(null, event);
+			let googleToken = req.headers.google.access_token;
+			let calendarId = req.headers.google.email;
+			if (googleToken && calendarId && eventData.googleEventId) {
+				let googleEventPayload = {
+					'summary': eventData.subject,
+					'location': eventData.location,
+					'description': eventData.body,
+					'start': {
+						'dateTime': formatedFromTime,
+						'timeZone': (userSettings && userSettings.timezone) ? userSettings.timezone : DEFAULT.timezone,
+					},
+					'end': {
+						'dateTime': formatedToTime,
+						'timeZone': (userSettings && userSettings.timezone) ? userSettings.timezone : DEFAULT.timezone,
+					},
+					// 'recurrence': ['RRULE:FREQ=DAILY;COUNT=2'],
+					'recurrence': [],
+					'attendees': [{
+						'email': calendarId
+					}],
+					'reminders': {
+						'useDefault': false,
+						'overrides': [{
+								'method': 'email',
+								'minutes': 24 * 60
+							},
+							{
+								'method': 'popup',
+								'minutes': 10
+							},
+						],
+					},
+				};
+				gcal(googleToken).events.update(calendarId, eventData.googleEventId, googleEventPayload, {}, function (err, data) {
+					if (err) {
+						cb(err);
+					} else {
+						cb(null, event);
+					}
+				});
+			} else {
+				cb(null, event);
+			}
+		},
+		function (event, cb) {
+			console.log("=============", eventData);
+			ref.child(`/${username}/events/${eventId}`).update(eventData);
+			cb(null, eventData);
 		}
 	], function (error, data) {
 		if (error) {
-			return res.json(data);
+			return res.json(error);
 		} else {
-			let result = _.assign({}, firebaseEvent, outlookEvent);
-			return res.json(result);
+			// let result = _.assign({}, firebaseEvent, outlookEvent);
+			return res.json(data);
 		}
 	});
 };
@@ -266,10 +351,12 @@ router.post('/:username/:id', updateEvent);
 router.put('/:username/:id', updateEvent);
 
 
-var deleteEvent = function upsertEvent(req, res) {
+var deleteEvent = function deleteEvent(req, res) {
 
 	let accessToken = req.headers.access_token || req.query.access_token;
 	let username = req.params.username;
+	let googleToken = req.headers.google.access_token;
+	let calendarId = req.headers.google.email;
 	let eventId = req.params.id;
 
 	async.waterfall([
@@ -280,24 +367,34 @@ var deleteEvent = function upsertEvent(req, res) {
 			});
 		},
 		function (event, cb) {
-			if (accessToken && event.outlookEventId) {
+			if (accessToken && event && event.outlookEventId) {
 				var deleteEventParameters = {
 					token: accessToken,
 					eventId: event.outlookEventId
 				};
-				outlook.calendar.deleteEvent(deleteEventParameters, function (error, event) {
+				outlook.calendar.deleteEvent(deleteEventParameters, function (error, result) {
 					if (error) {
-						console.log(error);
-						res.send(error);
+						cb(error);						
 					} else {
-						let result = {
-							success: 'event is delete from outlook calendar.'
-						};
-						cb(null, result);
+						cb(null, event);
 					}
 				});
 			} else {
 				cb(null, event);
+			}
+		},
+		function(event, cb) {
+			if (googleToken && calendarId && event.googleEventId) {
+
+				gcal(googleToken).events.delete(calendarId, event.googleEventId, {}, function (err, data) {
+					if (err) {
+						cb(err);
+					} else {
+						cb(null, event);
+					}
+				});
+			} else {
+				cb(null, event);				
 			}
 		},
 		function (event, cb) {
@@ -305,10 +402,13 @@ var deleteEvent = function upsertEvent(req, res) {
 			cb(null, event);
 		},
 	], function (error, data) {
-		return res.json(data);
+		if(error) {
+			return res.json(error);
+		} else {
+			return res.json(data);
+		}
 	});
 };
-
 router.delete('/:username/:id', deleteEvent);
 
 module.exports = router;

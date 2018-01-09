@@ -40,6 +40,10 @@ const async = require('async');
 var rp = require('request-promise');
 
 const passAcessTokens = (req, res, next) => {
+	let auth = {
+		outlook: {},
+		google: {}
+	};
 	let username = req.headers.username;
 	let isOutlookTokenExpired = false;
 	async.waterfall([
@@ -48,7 +52,7 @@ const passAcessTokens = (req, res, next) => {
 				let snapshotVal = snapshot.val();
 				isOutlookTokenExpired = moment(new Date()).isAfter(snapshotVal.expires_at);
 				cb(null, snapshotVal);
-			}).catch(function(err) {
+			}).catch(function (err) {
 				cb(err);
 			});
 		},
@@ -64,18 +68,32 @@ const passAcessTokens = (req, res, next) => {
 				rp(options)
 					.then(function (result) {
 						let refreshOutlookToken = result;
-						cb(null, refreshOutlookToken);				
+						auth.outlook = refreshOutlookToken;
+						cb(null, auth);
 					})
 					.catch(function (err) {
 						cb(err);
 					});
 			} else {
-				cb(null, outlook);
+				auth.outlook = outlook;
+				cb(null, auth);
 			}
+		},
+		function (authObj, cb) {
+			ref.child(`/${username}/google`).once('value').then(function (snapshot) {
+				let snapshotVal = snapshot.val();
+				auth.google = snapshotVal;
+				cb(null, auth);
+			}).catch(function (err) {
+				cb(err);
+			});
+		},
+	], function (err, auth) {
+		if (auth && auth.outlook && auth.outlook.access_token) {
+			req.headers.access_token = auth.outlook.access_token;
 		}
-	], function (err, outlook) {
-		if(outlook && outlook.access_token) {
-			req.headers.access_token = outlook.access_token;
+		if (auth && auth.google && auth.google.access_token) {
+			req.headers.google = auth.google;
 		}
 		next();
 	});

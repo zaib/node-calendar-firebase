@@ -15,7 +15,9 @@ module.exports = {
 		databaseURL: 'https://connecpath.firebaseio.com',
 		google: {
 			consumer_key: '112038682100-s4e06j3ikepf2q54u1ni1uoum3inuiju.apps.googleusercontent.com',
-			consumer_secret: '85i60tcUn70KeHnIq-gucKC3'
+			consumer_secret: '85i60tcUn70KeHnIq-gucKC3',
+			redirectUri: 'http://localhost:8080/google/authorize',
+			permissions: ['openid', 'email', 'https://www.googleapis.com/auth/calendar']			
 		},
 		outlook: {
 			clientId: '3fe26a67-390c-421f-9f81-484cdc69ac0e',

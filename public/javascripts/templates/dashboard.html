@@ -29,6 +29,11 @@
 	<div class="col-sm">
         <h3>Add/Edit Event</h3>
 		<form>
+
+			<div class="form-group" ng-if="currentEvent.id">
+				<label for="eventSubject">Event ID</label>
+				<input type="text" class="form-control" readonly="readonly" id="eventSubject" placeholder="Enter Event Title" ng-model="currentEvent.id" />
+			</div>
 			<div class="form-group">
 				<label for="eventSubject">Subject</label>
 				<input type="text" class="form-control" id="eventSubject" placeholder="Enter Event Title" ng-model="currentEvent.subject" />

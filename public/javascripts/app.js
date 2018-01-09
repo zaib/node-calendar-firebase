@@ -16,12 +16,12 @@ app.controller('myCtrl', function ($scope, $http, toast) {
 
 	var ts = Math.round((new Date()).getTime() / 1000);
 	var defaultEvent = {
-		subject: '',
+		subject: 'New Event',
 		fromTime: moment.unix(ts).format("YYYY-MM-DD HH:mm"),
 		toTime: moment.unix(ts).format("YYYY-MM-DD HH:mm"),
-		location: '',
-		type: ''
-	}
+		location: '5004 44th St',
+		type: 'appointment'
+	};
 
 	$scope.eventsList = [];
 	$scope.currentEvent = defaultEvent;
@@ -73,6 +73,8 @@ app.controller('myCtrl', function ($scope, $http, toast) {
 			data: event
 		}).then(function successCallback(response) {
 			if (!event.id) {
+				response.data.fromTime = moment.unix(response.data.fromTime).format("YYYY-MM-DD HH:mm")
+				response.data.toTime = moment.unix(response.data.toTime).format("YYYY-MM-DD HH:mm")
 				$scope.eventsList.push(response.data);
 			}
 			toast({
@@ -104,6 +106,7 @@ app.controller('myCtrl', function ($scope, $http, toast) {
 				'username': 'jahanzaib'
 			}
 		}).then(function successCallback(response) {
+			console.log(response);
 			_.remove($scope.eventsList, {
 				id: event.id
 			});
@@ -120,7 +123,5 @@ app.controller('myCtrl', function ($scope, $http, toast) {
 				className: "alert-danger"
 			});
 		});
-
 	};
-
 });
