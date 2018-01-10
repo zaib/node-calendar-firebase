@@ -188,7 +188,6 @@ router.get('/:username/refreshtoken', function (req, res) {
 	}
 });
 
-
 var createEvent = function (req, res) {
 	var username = req.params.username;
 	var access_token = req.headers.access_token || req.query.access_token;

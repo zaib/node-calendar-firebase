@@ -48,4 +48,10 @@ router.get('/app/settings', function (req, res) {
 	});
 });
 
+
+router.get('/outlook/access', function (req, res) {
+	var authUrl = authHelper.getAuthUrl();
+	res.redirect(authUrl);
+});
+
 module.exports = router;

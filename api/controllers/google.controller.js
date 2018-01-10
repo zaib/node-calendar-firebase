@@ -19,8 +19,8 @@ const GoogleStrategy = require('passport-google-oauth').OAuth2Strategy;
 passport.use(new GoogleStrategy({
 		clientID: config.google.consumer_key,
 		clientSecret: config.google.consumer_secret,
-		callbackURL: "http://localhost:8080/google/auth/callback",
-		scope: ['openid', 'profile', 'email', 'https://www.googleapis.com/auth/calendar'],
+		callbackURL: config.google.redirectUri,
+		scope: config.google.permissions,
 		// accessType: 'offline', 
 		// approvalPrompt: 'force'
 		// prompt: 'consent'

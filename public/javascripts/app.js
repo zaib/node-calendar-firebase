@@ -1,10 +1,13 @@
 var app = angular.module('myApp', ["ngRoute", "angularjsToast"]);
 
-app.config(function ($routeProvider) {
+app.config(function ($routeProvider, $locationProvider) {
 	$routeProvider
 		.when("/", {
 			templateUrl: "/javascripts/templates/dashboard.html"
 		});
+		// enable html5Mode for pushstate ('#'-less URLs)
+		// $locationProvider.html5Mode(true);
+		// $locationProvider.hashPrefix('!');
 });
 
 app.controller('myCtrl', function ($scope, $http, $window, toast) {
@@ -23,15 +26,15 @@ app.controller('myCtrl', function ($scope, $http, $window, toast) {
 	};
 
 	var defaultUser = {
-		username: '',
-		outlookEmail: '',
-		googleEmail: ''
+		username: 'jahanzaibaslam',
+		outlookEmail: 'jahanzaib.aslam@outlook.com',
+		googleEmail: 'jahanzaibaslam156@gmail.com'
 	};
 
 	$scope.eventsList = [];
 	$scope.currentEvent = defaultEvent;
 	$scope.user = defaultUser;
-	$scope.user.username = localStorage.getItem('username');
+	$scope.currentUser = localStorage.getItem('username');
 
 	$scope.setCurrentEvent = function (event) {
 		$scope.currentEvent = event;
@@ -167,8 +170,8 @@ app.controller('myCtrl', function ($scope, $http, $window, toast) {
 			data: user
 		}).then(function successCallback(response) {
 			localStorage.setItem('username', user.username);
-
 			$scope.user = null;
+			$window.location.href = window.location.href + 'dashboard';
 			toast({
 				duration: 10000,
 				message: "SUCCESS: User Saved!",

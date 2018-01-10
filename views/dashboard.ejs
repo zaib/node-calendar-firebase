@@ -4,6 +4,7 @@
 	<meta content="IE=edge" http-equiv="X-UA-Compatible">
 	<meta charset="utf-8">
 	<title>Dashboard</title>
+	<base href="/"></base>
 	<link type="text/css" rel="stylesheet" href="//appsforoffice.microsoft.com/fabric/1.0/fabric.min.css">
 	<link type="text/css" rel="stylesheet" href="//appsforoffice.microsoft.com/fabric/1.0/fabric.components.min.css">
 
@@ -41,8 +42,17 @@
 		<div class="ms-Grid-row">
 			<div id="title-banner" class="ms-font-su">Outlook Calendar Sync Demo</div>
 		</div>
+		
+		<hr />
+		<a href="/outlook/access" ><button type="button" class="btn btn-primary">Sync with Outlook Calendar</button></a>
+		<a href="/google"><button type="button" class="btn btn-success">Sync with Google Calendar</button></a>
+		<hr />
 		<div id="body-content" class="ms-Grid-row">
-			<h1>Welcome {{user.username}}!</h1>
+
+			<h1>Welcome {{currentUser}}!</h1>
+
+			<hr />
+		
 			<div ng-view class="container-fluid"></div>
 		</div>
 	</div>

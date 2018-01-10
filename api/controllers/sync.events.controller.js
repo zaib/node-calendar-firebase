@@ -233,6 +233,7 @@ const updateEvent = function updateEvent(req, res) {
 	
 	let userSettings = {};
 	let outlookEvent = {};
+	let googleEvent = {};
 	let firebaseEvent = {};
 	
 	async.waterfall([
@@ -291,7 +292,7 @@ const updateEvent = function updateEvent(req, res) {
 			}
 		},
 		function (event, cb) {
-			if (req.headers.google && req.headers.google.access_token && req.headers.google.email) {
+			if (req.headers.google && firebaseEvent.googleEventId) {
 			
 				let googleToken = req.headers.google.access_token;
 				let calendarId = req.headers.google.email;
@@ -358,8 +359,8 @@ var deleteEvent = function deleteEvent(req, res) {
 
 	let accessToken = req.headers.access_token || req.query.access_token;
 	let username = req.params.username;
-	let googleToken = req.headers.google.access_token;
-	let calendarId = req.headers.google.email;
+	let googleToken = (req.headers.google) ? req.headers.google.access_token : null;
+	let calendarId = (req.headers.google) ? req.headers.google.email : null;
 	let eventId = req.params.id;
 
 	async.waterfall([
