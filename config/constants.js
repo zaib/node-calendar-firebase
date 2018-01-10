@@ -1,5 +1,5 @@
 module.exports = {
-    timezone: 'Eastern Standard Time',
+    timezone: 'US/Eastern',
     dateFormat: 'YYYY-MM-DD',
     outlookTimeFormat: 'YYYY-MM-DDTHH:mm:ss' 
 };

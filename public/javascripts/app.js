@@ -7,10 +7,9 @@ app.config(function ($routeProvider) {
 		});
 });
 
-app.controller('myCtrl', function ($scope, $http, toast) {
+app.controller('myCtrl', function ($scope, $http, $window, toast) {
 
 	var BASE_URL = 'http://localhost:8080';
-	var USERNAME = 'jahanzaib';
 
 	$scope.moment = moment;
 
@@ -23,8 +22,16 @@ app.controller('myCtrl', function ($scope, $http, toast) {
 		type: 'appointment'
 	};
 
+	var defaultUser = {
+		username: '',
+		outlookEmail: '',
+		googleEmail: ''
+	};
+
 	$scope.eventsList = [];
 	$scope.currentEvent = defaultEvent;
+	$scope.user = defaultUser;
+	$scope.user.username = localStorage.getItem('username');
 
 	$scope.setCurrentEvent = function (event) {
 		$scope.currentEvent = event;
@@ -33,15 +40,12 @@ app.controller('myCtrl', function ($scope, $http, toast) {
 		$scope.currentEvent = defaultEvent;
 	};
 
-
-	_getEventsList();
-
-	function _getEventsList() {
+	$scope.getEventsList = function () {
 		$http({
 			method: 'GET',
-			url: BASE_URL + '/events/' + USERNAME,
+			url: BASE_URL + '/events/' + localStorage.getItem('username'),
 			headers: {
-				'username': 'jahanzaib'
+				'username': localStorage.getItem('username')
 			}
 		}).then(function successCallback(response) {
 			$scope.eventsList = response.data || [];
@@ -53,10 +57,38 @@ app.controller('myCtrl', function ($scope, $http, toast) {
 			console.log(error);
 
 		});
-	}
+	};
+
+	$scope.syncGoogleEvents = function () {
+		$http({
+			method: 'GET',
+			url: BASE_URL + '/google/sync',
+			headers: {
+				'username': localStorage.getItem('username')
+			}
+		}).then(function successCallback(response) {
+			console.log(response);
+		}, function errorCallback(error) {
+			console.log(error);
+		});
+	};
+
+	$scope.syncOutlookEvents = function () {
+		$http({
+			method: 'GET',
+			url: BASE_URL + '/outlook/' + localStorage.getItem('username') + '/sync',
+			headers: {
+				'username': localStorage.getItem('username')
+			}
+		}).then(function successCallback(response) {
+			console.log(response);
+		}, function errorCallback(error) {
+			console.log(error);
+		});
+	};
 
 	$scope.upsertEvent = function (event) {
-		var endpoint = BASE_URL + '/events/' + USERNAME;
+		var endpoint = BASE_URL + '/events/' + localStorage.getItem('username');
 		var Method = 'POST';
 
 		if (event.id) {
@@ -68,7 +100,7 @@ app.controller('myCtrl', function ($scope, $http, toast) {
 			method: Method,
 			url: endpoint,
 			headers: {
-				'username': 'jahanzaib'
+				'username': localStorage.getItem('username')
 			},
 			data: event
 		}).then(function successCallback(response) {
@@ -90,20 +122,19 @@ app.controller('myCtrl', function ($scope, $http, toast) {
 				className: "alert-danger"
 			});
 		});
-
 	};
 
 	$scope.deleteEvent = function (event) {
-        var isConfirm = confirm('are you sure?');
-        if(!isConfirm) return false;
+		var isConfirm = confirm('are you sure?');
+		if (!isConfirm) return false;
 
-		var endpoint = BASE_URL + '/events/' + USERNAME + '/' + event.id;
+		var endpoint = BASE_URL + '/events/' + localStorage.getItem('username') + '/' + event.id;
 		var Method = 'DELETE';
 		$http({
 			method: Method,
 			url: endpoint,
 			headers: {
-				'username': 'jahanzaib'
+				'username': localStorage.getItem('username')
 			}
 		}).then(function successCallback(response) {
 			console.log(response);
@@ -120,6 +151,35 @@ app.controller('myCtrl', function ($scope, $http, toast) {
 			toast({
 				duration: 10000,
 				message: "ERROR! check API console",
+				className: "alert-danger"
+			});
+		});
+	};
+
+	$scope.createUser = function () {
+
+		var user = $scope.user;
+		var endpoint = BASE_URL + '/users/' + user.username;
+
+		$http({
+			method: 'POST',
+			url: endpoint,
+			data: user
+		}).then(function successCallback(response) {
+			localStorage.setItem('username', user.username);
+
+			$scope.user = null;
+			toast({
+				duration: 10000,
+				message: "SUCCESS: User Saved!",
+				className: "alert-success"
+			});
+
+		}, function errorCallback(error) {
+			console.log(error);
+			toast({
+				duration: 10000,
+				message: "ERROR! " + error.data.response.errorMessage,
 				className: "alert-danger"
 			});
 		});

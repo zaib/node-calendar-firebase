@@ -64,8 +64,6 @@ router.get('/:username/:id', getEventDetail);
 
 const createEvent = function createEvent(req, res) {
 
-	// return res.json(req.headers);
-
 	let accessToken = req.headers.access_token || req.query.access_token;
 	let username = req.params.username;
 
@@ -87,6 +85,8 @@ const createEvent = function createEvent(req, res) {
 	payload.fromTime = moment(payload.fromTime).unix();
 	payload.toTime = moment(payload.toTime).unix();
 	payload.source = 'connecpath';
+
+	let eventData = payload;
 
 	let userSettings = {};
 	let outlookEvent = {};
@@ -131,6 +131,7 @@ const createEvent = function createEvent(req, res) {
 						cb(data);
 					} else {
 						outlookEvent = outlookAuthHelper.parseOutlookEvent(data);
+						eventData.outlookEventId = outlookEvent.outlookEventId;
 						cb(null, outlookEvent);
 					}
 				});
@@ -139,13 +140,14 @@ const createEvent = function createEvent(req, res) {
 			}
 		},
 		function (event, cb) {
-			let googleToken = req.headers.google.access_token;
-			let calendarId = req.headers.google.email;
-			if (googleToken && calendarId) {
+			if (req.headers.google && req.headers.google.access_token && req.headers.google.email) {
+				let googleToken = req.headers.google.access_token;
+				let calendarId = req.headers.google.email;
+			
 				let payload = {
-					'summary': event.subject,
-					'location': event.location,
-					'description': event.body,
+					'summary': eventData.subject,
+					'location': eventData.location,
+					'description': eventData.body,
 					'start': {
 						'dateTime': formatedFromTime,
 						'timeZone': (userSettings && userSettings.timezone) ? userSettings.timezone : DEFAULT.timezone,
@@ -176,7 +178,7 @@ const createEvent = function createEvent(req, res) {
 					if (err) {
 						cb(err);
 					} else {
-						event.googleEventId = data.id;
+						eventData.googleEventId = data.id;
 						cb(null, event);
 					}
 				});
@@ -186,8 +188,8 @@ const createEvent = function createEvent(req, res) {
 		},
 		function (event, cb) {
 			event.id = eventId;
-			ref.child(`/${username}/events/${eventId}`).set(event);
-			firebaseEvent = event;
+			ref.child(`/${username}/events/${eventId}`).set(eventData);
+			firebaseEvent = eventData;
 			cb(null, event);
 		},
 	], function (error, data) {
@@ -289,9 +291,11 @@ const updateEvent = function updateEvent(req, res) {
 			}
 		},
 		function (event, cb) {
-			let googleToken = req.headers.google.access_token;
-			let calendarId = req.headers.google.email;
-			if (googleToken && calendarId && eventData.googleEventId) {
+			if (req.headers.google && req.headers.google.access_token && req.headers.google.email) {
+			
+				let googleToken = req.headers.google.access_token;
+				let calendarId = req.headers.google.email;
+				
 				let googleEventPayload = {
 					'summary': eventData.subject,
 					'location': eventData.location,
@@ -334,7 +338,6 @@ const updateEvent = function updateEvent(req, res) {
 			}
 		},
 		function (event, cb) {
-			console.log("=============", eventData);
 			ref.child(`/${username}/events/${eventId}`).update(eventData);
 			cb(null, eventData);
 		}

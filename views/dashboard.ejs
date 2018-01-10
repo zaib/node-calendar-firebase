@@ -37,30 +37,15 @@
 </head>
 
 <body ng-app="myApp">
-	<div id="main-content" class="ms-Grid" ng-controller="myCtrl">
+	<div id="main-content" class="ms-Grid" ng-controller="myCtrl" ng-init="getEventsList(); syncGoogleEvents(); syncOutlookEvents()">
 		<div class="ms-Grid-row">
 			<div id="title-banner" class="ms-font-su">Outlook Calendar Sync Demo</div>
 		</div>
 		<div id="body-content" class="ms-Grid-row">
-			<h1>Welcome!
-				<%= data.username %>
-			</h1>
-			<p>Your oulook calendar has synced with connectpath now.</p>
-
+			<h1>Welcome {{user.username}}!</h1>
 			<div ng-view class="container-fluid"></div>
-
 		</div>
 	</div>
-
-
-	<script>
-		$(document).ready(function () {
-			jQuery('#fromtimepicker').datetimepicker();
-			jQuery('#totimepicker').datetimepicker();
-		});
-
-	</script>
-
 </body>
 
 </html>

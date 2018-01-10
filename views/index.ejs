@@ -1,40 +1,40 @@
 <html>
 
-	<head>
-		<meta content="IE=edge" http-equiv="X-UA-Compatible">
-		<meta charset="utf-8">
-		<title>Dashboard</title>
-		<link type="text/css" rel="stylesheet" href="//appsforoffice.microsoft.com/fabric/1.0/fabric.min.css">
-		<link type="text/css" rel="stylesheet" href="//appsforoffice.microsoft.com/fabric/1.0/fabric.components.min.css">
-	
-		<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta.3/css/bootstrap.min.css" integrity="sha384-Zug+QiDoJOrZ5t4lssLdxGhVrurbmBWopoEl+M6BdEfwnCJZtKxi1KgxUyJq13dy"
-		crossorigin="anonymous">
-		<link type="text/css" rel="stylesheet" href="/angularjs-toast/angularjs-toast.min.css">
-		<link type="text/css" rel="stylesheet" href="/jquery-datetimepicker/build/jquery.datetimepicker.min.css">
-		
-		<link type="text/css" rel="stylesheet" href="/stylesheets/style.css">
-	
-		<script src="https://code.jquery.com/jquery-3.2.1.slim.min.js" integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN"
-		crossorigin="anonymous"></script>
-		<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js" integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q"
-		crossorigin="anonymous"></script>
-		<script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta.3/js/bootstrap.min.js" integrity="sha384-a5N7Y/aK3qNeh15eJKGWxsqtnX/wWdSZSKp+81YjTmS15nvnvxKHuzaWwXHDli+4"
-		crossorigin="anonymous"></script>
-	
-		<script src="//ajax.googleapis.com/ajax/libs/angularjs/1.5.6/angular.min.js"></script>
-		<script src="//ajax.googleapis.com/ajax/libs/angularjs/1.5.6/angular-route.js"></script>
-		<script src="//ajax.googleapis.com/ajax/libs/angularjs/1.5.6/angular-sanitize.min.js"></script>
-		<script src="//ajax.googleapis.com/ajax/libs/angularjs/1.5.6/angular-animate.min.js"></script>
-		<script src="/angularjs-toast/angularjs-toast.min.js"></script>
-		<script src="https://cdn.jsdelivr.net/npm/moment@2.20.1/moment.min.js"></script>
-		<script src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.17.4/lodash.js"></script>
-		<script src="/jquery-datetimepicker/build/jquery.datetimepicker.full.min.js"></script>
-			
-		<script src="/javascripts/app.js"></script>
-	
-	</head>
-	
-<body>
+<head>
+	<meta content="IE=edge" http-equiv="X-UA-Compatible">
+	<meta charset="utf-8">
+	<title>Dashboard</title>
+	<link type="text/css" rel="stylesheet" href="//appsforoffice.microsoft.com/fabric/1.0/fabric.min.css">
+	<link type="text/css" rel="stylesheet" href="//appsforoffice.microsoft.com/fabric/1.0/fabric.components.min.css">
+
+	<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta.3/css/bootstrap.min.css" integrity="sha384-Zug+QiDoJOrZ5t4lssLdxGhVrurbmBWopoEl+M6BdEfwnCJZtKxi1KgxUyJq13dy"
+	crossorigin="anonymous">
+	<link type="text/css" rel="stylesheet" href="/angularjs-toast/angularjs-toast.min.css">
+	<link type="text/css" rel="stylesheet" href="/jquery-datetimepicker/build/jquery.datetimepicker.min.css">
+
+	<link type="text/css" rel="stylesheet" href="/stylesheets/style.css">
+
+	<script src="https://code.jquery.com/jquery-3.2.1.slim.min.js" integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN"
+	crossorigin="anonymous"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js" integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q"
+	crossorigin="anonymous"></script>
+	<script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta.3/js/bootstrap.min.js" integrity="sha384-a5N7Y/aK3qNeh15eJKGWxsqtnX/wWdSZSKp+81YjTmS15nvnvxKHuzaWwXHDli+4"
+	crossorigin="anonymous"></script>
+
+	<script src="//ajax.googleapis.com/ajax/libs/angularjs/1.5.6/angular.min.js"></script>
+	<script src="//ajax.googleapis.com/ajax/libs/angularjs/1.5.6/angular-route.js"></script>
+	<script src="//ajax.googleapis.com/ajax/libs/angularjs/1.5.6/angular-sanitize.min.js"></script>
+	<script src="//ajax.googleapis.com/ajax/libs/angularjs/1.5.6/angular-animate.min.js"></script>
+	<script src="/angularjs-toast/angularjs-toast.min.js"></script>
+	<script src="https://cdn.jsdelivr.net/npm/moment@2.20.1/moment.min.js"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.17.4/lodash.js"></script>
+	<script src="/jquery-datetimepicker/build/jquery.datetimepicker.full.min.js"></script>
+
+	<script src="/javascripts/app.js"></script>
+
+</head>
+
+<body ng-app="myApp">
 	<div id="main-content" class="ms-Grid">
 		<div class="ms-Grid-row">
 			<div id="title-banner" class="ms-font-su">Calendar Sync Demo</div>
@@ -42,18 +42,37 @@
 		<div id="body-content" class="ms-Grid-row">
 			<a id="signin-button" href="<%= authUrl %>">
 				<button type="button" class="btn btn-primary">Click here to sign in with Outlook</button>
-				
+
 			</a>
 		</div>
 
 		<hr />
-		
+
 		<div id="body-content" class="ms-Grid-row">
-			<a id="signin-button"  href="/google">
+			<a id="signin-button" href="/google">
 				<!-- <span class="ms-Button-label">Click here to sign in with Google</span> -->
 				<button type="button" class="btn btn-success">Click here to sign in with Google</button>
 			</a>
 		</div>
+	</div>
+	<div class="container-fluid" ng-controller="myCtrl">
+		<form>
+			<div class="form-group">
+				<label for="username">Username</label>
+				<input type="text" class="form-control" required id="username" placeholder="Enter Username" ng-model="user.username" />
+			</div>
+			<div class="form-group">
+				<label for="outlookEmail">Outlook Email</label>
+				<input type="text" class="form-control" required id="outlookEmail" placeholder="Enter Outlook Email" ng-model="user.outlookEmail"
+				/>
+			</div>
+			<div class="form-group">
+				<label for="googleEmail">Google Email</label>
+				<input type="text" class="form-control" required id="googleEmail" placeholder="Enter Google Email" ng-model="user.googleEmail"
+				/>
+			</div>
+			<button type="submit" class="btn btn-primary" ng-click="createUser()">Save</button>
+		</form>
 	</div>
 
 </body>

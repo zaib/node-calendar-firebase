@@ -20,8 +20,10 @@ router.get('/', function (req, res, next) {
 
 router.get('/dashboard', function (req, res, next) {
 	// res.json(req.query);
-
-	var username = req.query.username || 'jahanzaib';
+	res.render('dashboard', {
+		title: 'Express'
+	});
+	/* var username = req.query.username;
 	var endpoint = config.apps.api.baseUrl + `/users/${username}`;
 	rp(endpoint)
     .then(function (result) {
@@ -33,7 +35,7 @@ router.get('/dashboard', function (req, res, next) {
     })
     .catch(function (err) {
 		res.send(err);
-    });
+    }); */
 
 });
 

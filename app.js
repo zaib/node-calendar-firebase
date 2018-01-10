@@ -108,12 +108,12 @@ const outlookCtrl = require('./api/controllers/outlook.controller');
 const googleCtrl = require('./api/controllers/google.controller');
 
 app.use('/', index);
+app.use('/users', usersCtrl);
 // app.use('/events', eventsCtrl);
 app.use('/events', passAcessTokens, syncEventsCtrl);
 app.use('/sync/events', passAcessTokens, syncEventsCtrl);
-app.use('/users', passAcessTokens, usersCtrl);
 app.use('/outlook', outlookCtrl);
-app.use('/google', googleCtrl);
+app.use('/google', passAcessTokens, googleCtrl);
 
 // catch 404 and forward to error handler
 app.use(function (req, res, next) {
