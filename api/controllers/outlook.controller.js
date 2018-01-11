@@ -27,20 +27,18 @@ router.get('/authorize', function (req, res) {
 	}
 });
 
-function tokenReceived(req, res, error, token) {
+function tokenReceived(req, res, error, auth) {
 	if (error) {
 		console.log('ERROR getting token:' + error);
 		return res.json('ERROR getting token: ' + error);
 	} else {
-		var auth = {};
-		auth.access_token = token.token.access_token;
-		auth.refresh_token = token.token.refresh_token;
-		auth.email = outlookAuthHelper.getEmailFromIdToken(token.token.id_token);
-		token.token.email = outlookAuthHelper.getEmailFromIdToken(token.token.id_token);
 
+		auth.token.expires_at = moment(auth.token.expires_at).unix();
+		auth.token.email = outlookAuthHelper.getEmailFromIdToken(auth.token.id_token);
+		let email = auth.token.email;
 		var username = '';
 		var counter = 1;
-		ref.orderByChild('outlookEmail').equalTo(auth.email).on('value', function (snapshot) {
+		ref.orderByChild('outlookEmail').equalTo(email).on('value', function (snapshot) {
 			// return res.json(token)
 			if (counter === 1) {
 				counter++;
@@ -48,7 +46,7 @@ function tokenReceived(req, res, error, token) {
 					username = user.key;
 				});
 				var payload = {
-					outlook: token.token
+					outlook: auth.token
 				};
 				var stringifyData = JSON.stringify(payload.outlook);
 				if (username) {

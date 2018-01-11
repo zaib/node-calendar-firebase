@@ -28,10 +28,10 @@ module.exports = {
 		},
 		databaseURL: 'https://mvp-v1-00.firebaseio.com/',
 		google: {
-			consumer_key: '112038682100-s4e06j3ikepf2q54u1ni1uoum3inuiju.apps.googleusercontent.com',
-			consumer_secret: '85i60tcUn70KeHnIq-gucKC3',
+			consumer_key: '839143158083-47q8oa9j0pg9m5t98pq21l6aft816gnv.apps.googleusercontent.com',
+			consumer_secret: 'zMnsyaeZ7HZNgujkTVyXfYuu',
 			redirectUri: 'http://localhost:8080/google/auth/callback',
-			permissions: ['openid', 'profile', 'email', 'https://www.googleapis.com/auth/calendar']
+			permissions: ['email', 'https://www.googleapis.com/auth/calendar']
 		},
 		outlook: {
 			clientId: '3fe26a67-390c-421f-9f81-484cdc69ac0e',

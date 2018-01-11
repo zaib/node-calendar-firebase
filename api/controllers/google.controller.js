@@ -14,34 +14,58 @@ var router = express.Router();
 var gcal = require('google-calendar');
 
 const passport = require('passport');
-const GoogleStrategy = require('passport-google-oauth').OAuth2Strategy;
+// const GoogleStrategy = require('passport-google-oauth').OAuth2Strategy;
+const refresh = require('passport-oauth2-refresh');
 
-passport.use(new GoogleStrategy({
+const GoogleStrategy = require('passport-google-oauth20');
+
+/* passport.use(new GoogleStrategy({
+    clientID: config.google.consumer_key,
+    clientSecret: config.google.consumer_secret,
+	callbackURL: config.google.redirectUri,
+	scope: config.google.permissions,
+	accessType: 'offline', 
+	// approvalPrompt: 'force',
+	prompt: 'consent',	
+  },
+  function(accessToken, refreshToken, profile, cb) {
+	console.log(accessToken, refreshToken, profile);
+	cb(null, profile);
+  }
+)); */
+
+var strategy = new GoogleStrategy({
 		clientID: config.google.consumer_key,
 		clientSecret: config.google.consumer_secret,
-		callbackURL: config.google.redirectUri,
-		scope: config.google.permissions,
-		// accessType: 'offline', 
-		// approvalPrompt: 'force'
-		// prompt: 'consent'
-		// accessType: 'offline',
-		// approvalPrompt: 'force'
+		callbackURL: config.google.redirectUri
 	},
-	function (accessToken, refreshToken, profile, done) {
-		profile.access_token = accessToken;
-		// profile.refreshToken = refreshToken;
-		profile.email = profile.emails[0].value;
+	function (accessToken, refreshToken, params, profile, done) {
+		
+		params.refresh_token = refreshToken;
+		params.email = profile.emails[0].value;
+		params.expires_at = moment().add(params.expires_in, "s").format("X");
+		profile.params = params;
+
 		return done(null, profile);
 	}
-));
+);
+passport.use(strategy);
+refresh.use(strategy);
 
 router.get('/auth', passport.authenticate('google', {
-	session: false
+	session: false,
+	scope: config.google.permissions,
+	accessType: 'offline', 
+	prompt: 'consent',
 }));
 
 router.get('/auth/callback',
-	passport.authenticate('google', {
+	/* passport.authenticate('google', {
 		session: false,
+		failureRedirect: '/google/login'
+	}), */
+	passport.authenticate('google', {
+		session: false,		
 		failureRedirect: '/google/login'
 	}),
 	function (req, res) {
@@ -52,14 +76,11 @@ router.get('/auth/callback',
 			return res.json('ERROR getting token: ');
 		} else {
 			// return res.json(user);
-			var auth = {};
-			auth.access_token = user.access_token;
-			auth.email = user.email;
-			// auth.refresh_token = token.token.refresh_token;
-
+			let auth = user.params;
+			let email = user.params.email;
 			let username = '';
 			let counter = 1;
-			ref.orderByChild('googleEmail').equalTo(user.email).on('value', function (snapshot) {
+			ref.orderByChild('googleEmail').equalTo(email).on('value', function (snapshot) {
 				if (counter === 1) {
 					counter++;
 					snapshot.forEach(function (user) {
