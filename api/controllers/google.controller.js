@@ -1,46 +1,40 @@
 const env = process.env.NODE_ENV || 'development';
-var config = require('./../../config/config')[env];
+const config = require('./../../config/config')[env];
 
-var firebase = require('./../../config/connection.js');
-var ref = firebase.ref('users');
+const firebase = require('./../../config/connection.js');
+const ref = firebase.ref('users');
 
-var moment = require('moment');
-var _ = require('lodash');
+const errorHelper = require('./../helpers/errors.handler');
+const moment = require('moment');
+const _ = require('lodash');
+const async = require('async');
 
-var util = require('util');
-var express = require('express');
-var router = express.Router();
 
-var gcal = require('google-calendar');
+const util = require('util');
+const express = require('express');
+const router = express.Router();
+
+const google = require("googleapis");
+const OAuth2 = google.auth.OAuth2;
+const gcal = require('google-calendar');
 
 const passport = require('passport');
-// const GoogleStrategy = require('passport-google-oauth').OAuth2Strategy;
-const refresh = require('passport-oauth2-refresh');
+const GoogleStrategy = require('passport-google-oauth').OAuth2Strategy;
 
-const GoogleStrategy = require('passport-google-oauth20');
+// create auth client
+const oauth2Client = new OAuth2(
+	config.google.consumer_key,
+	config.google.consumer_secret,
+	config.google.redirectUri
+);
 
-/* passport.use(new GoogleStrategy({
-    clientID: config.google.consumer_key,
-    clientSecret: config.google.consumer_secret,
-	callbackURL: config.google.redirectUri,
-	scope: config.google.permissions,
-	accessType: 'offline', 
-	// approvalPrompt: 'force',
-	prompt: 'consent',	
-  },
-  function(accessToken, refreshToken, profile, cb) {
-	console.log(accessToken, refreshToken, profile);
-	cb(null, profile);
-  }
-)); */
-
-var strategy = new GoogleStrategy({
+const strategy = new GoogleStrategy({
 		clientID: config.google.consumer_key,
 		clientSecret: config.google.consumer_secret,
 		callbackURL: config.google.redirectUri
 	},
 	function (accessToken, refreshToken, params, profile, done) {
-		
+
 		params.refresh_token = refreshToken;
 		params.email = profile.emails[0].value;
 		params.expires_at = moment().add(params.expires_in, "s").format("X");
@@ -50,22 +44,17 @@ var strategy = new GoogleStrategy({
 	}
 );
 passport.use(strategy);
-refresh.use(strategy);
 
 router.get('/auth', passport.authenticate('google', {
 	session: false,
 	scope: config.google.permissions,
-	accessType: 'offline', 
-	prompt: 'consent',
+	accessType: 'offline',
+	prompt: 'consent'
 }));
 
 router.get('/auth/callback',
-	/* passport.authenticate('google', {
-		session: false,
-		failureRedirect: '/google/login'
-	}), */
 	passport.authenticate('google', {
-		session: false,		
+		session: false,
 		failureRedirect: '/google/login'
 	}),
 	function (req, res) {
@@ -108,6 +97,66 @@ router.get('/auth/callback',
 	});
 
 
+router.get('/:username/refreshtoken', function (req, res) {
+	// check for user
+	let username = req.params.username || req.headers.username;
+	let refreshAccessToken = req.headers.refresh_token || req.query.refresh_token;
+	if (!username) {
+		return res.status(errorHelper.usernameError.status).json(errorHelper.usernameError);
+	} else {
+		let isTokenExpired = false;
+		let currentUnixTime = moment(new Date()).unix();
+		async.waterfall([
+			function (cb) {
+				if(!refreshAccessToken) {
+					ref.child(`/${username}/google`).once('value').then(function (snapshot) {
+						let snapshotVal = snapshot.val();
+						if (snapshotVal) {
+							isTokenExpired = moment(currentUnixTime).isAfter(snapshotVal.expires_at);
+							cb(null, snapshotVal);
+						} else {
+							return res.status(errorHelper.googleAuthError.status).json(errorHelper.googleAuthError);
+						}
+					}).catch(function (err) {
+						cb(err);
+					});
+				} else {
+					cb(null, refreshAccessToken);					
+				}
+			},
+			function (auth, cb) {
+				if (true || isTokenExpired && auth) {
+					// set the current users access and refresh token
+					oauth2Client.credentials = {
+						refresh_token: auth.refresh_token
+					};
+					// request a new token
+					oauth2Client.refreshAccessToken(function (err, token) {
+						if (err) {
+							return cb(err);
+						} else if (token) {
+							token.expires_at = token.expiry_date;
+							delete token.expiry_date;
+							return cb(null, token);
+						}
+					});
+				} else {
+					cb(null, auth);
+				}
+			}, function(refreshedToken, cb) {
+				ref.child(`/${username}/google`).update(refreshedToken);
+				return cb(null, refreshedToken);
+			},
+		], function (err, auth) {
+			if (err) {
+				return res.json(err);
+			} else {
+				return res.json(auth);
+			}
+		});
+	}
+});
+
 /*
   ===========================================================================
                                Google Calendar
@@ -127,24 +176,20 @@ router.all('/', function (req, res) {
 	});
 });
 
-router.all('/sync', function (req, res) {
+router.get('/:username/sync', function (req, res) {
 
-	if (!req.headers.google || !req.headers.google.access_token) {
-		return res.status(400).json({
-			headers: req.headers,
-			error: 'Invalid google access Token'
-		});
+	let username = req.params.username || req.headers.username;
+	if (!username) {
+		return res.status(errorHelper.usernameError.status).json(errorHelper.usernameError);
 	}
 
 	//Create an instance from accessToken
-	let username = req.headers.username;
 	let accessToken = req.headers.google.access_token;
 	let calendarId = req.headers.google.email;
-	console.log(calendarId);
 	// Set up our sync window from midnight on the current day to
 	// midnight 7 days from now.
 	let startDate = moment().startOf('day');
-	let endDate = moment(startDate).add(2, 'days');
+	let endDate = moment(startDate).add(30, 'days');
 	// The start and end date are passed as query parameters
 	let params = {
 		start: {
@@ -157,7 +202,6 @@ router.all('/sync', function (req, res) {
 
 	gcal(accessToken).events.list(calendarId, params, function (err, data) {
 		if (err) return res.status(500).json(err);
-
 		let googleEventList = _.filter(data.items, function (item) {
 			if (item.creator && item.creator.email === calendarId) {
 				return item;
@@ -165,17 +209,14 @@ router.all('/sync', function (req, res) {
 		});
 		let filterStartDate = moment(startDate).unix();
 		let filterToDate = moment(endDate).unix();
-		let firebaseEventList = [];
 		let responseList = [];
 		ref.child(`/${username}/events`).orderByChild("date").startAt(filterStartDate).endAt(filterToDate).once("value").then(function (snapshot) {
-			var snapshotVal = snapshot.val();
-			firebaseEventList = (snapshotVal) ? Object.values(snapshotVal) : [];
-
+			let snapshotVal = snapshot.val();
+			let firebaseEventList = (snapshotVal) ? Object.values(snapshotVal) : [];
 			_.forEach(googleEventList, function (gEvent) {
 				let firebaseEvent = _.find(firebaseEventList, {
 					googleEventId: gEvent.id
 				});
-
 				let googleEvent = parseGoogelEvent(gEvent);
 				let eventId;
 				if (firebaseEvent && firebaseEvent.id) {
@@ -184,19 +225,14 @@ router.all('/sync', function (req, res) {
 					eventId = ref.push().key;
 					googleEvent.source = 'google';
 				}
-
 				googleEvent.id = eventId;
 				ref.child(`/${username}/events/${eventId}`).update(googleEvent);
 				responseList.push(googleEvent);
 			});
-
 			return res.json(responseList);
-
 		}).catch(function (err) {
 			return res.json(err);
 		});
-
-		// return res.send(result);
 	});
 });
 

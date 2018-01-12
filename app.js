@@ -37,7 +37,7 @@ const ref = firebase.ref('users');
 
 const moment = require('moment');
 const async = require('async');
-var rp = require('request-promise');
+const rp = require('request-promise');
 
 const passAcessTokens = (req, res, next) => {
 	let auth = {
@@ -45,58 +45,40 @@ const passAcessTokens = (req, res, next) => {
 		google: {}
 	};
 	let username = req.headers.username;
-	let isOutlookTokenExpired = false;
-	async.waterfall([
-		function (cb) {
-			ref.child(`/${username}/outlook`).once('value').then(function (snapshot) {
-				let snapshotVal = snapshot.val();
-				isOutlookTokenExpired = moment(new Date()).isAfter(snapshotVal.expires_at);
-				cb(null, snapshotVal);
-			}).catch(function (err) {
-				cb(err);
-			});
-		},
-		function (outlook, cb) {
-			if (isOutlookTokenExpired) {
-				let refreshTokenUrl = req.protocol + '://' + req.get('host') + `/outlook/${username}/refreshtoken`;
-				let options = {
-					uri: refreshTokenUrl,
-					headers: {
-						refresh_token: outlook.refresh_token
-					}
-				};
-				rp(options)
-					.then(function (result) {
-						let refreshOutlookToken = result;
-						auth.outlook = refreshOutlookToken;
-						cb(null, auth);
-					})
-					.catch(function (err) {
-						cb(err);
-					});
-			} else {
-				auth.outlook = outlook;
-				cb(null, auth);
+	if (username) {
+		async.waterfall([
+			function (cb) {
+				ref.child(`/${username}/outlook`).once('value').then(function (snapshot) {
+					let snapshotVal = snapshot.val();
+					auth.outlook = snapshotVal;
+					cb(null, auth);
+				}).catch(function (err) {
+					cb(err);
+				});
+			},
+			function (authObj, cb) {
+				ref.child(`/${username}/google`).once('value').then(function (snapshot) {
+					let snapshotVal = snapshot.val();
+					auth.google = snapshotVal;
+					cb(null, auth);
+				}).catch(function (err) {
+					cb(err);
+				});
+			},
+		], function (err, auth) {
+			if (auth && auth.outlook && auth.outlook.access_token) {
+				req.headers.access_token = auth.outlook.access_token;
+				req.headers.outlook = auth.outlook.access_token;
 			}
-		},
-		function (authObj, cb) {
-			ref.child(`/${username}/google`).once('value').then(function (snapshot) {
-				let snapshotVal = snapshot.val();
-				auth.google = snapshotVal;
-				cb(null, auth);
-			}).catch(function (err) {
-				cb(err);
-			});
-		},
-	], function (err, auth) {
-		if (auth && auth.outlook && auth.outlook.access_token) {
-			req.headers.access_token = auth.outlook.access_token;
-		}
-		if (auth && auth.google && auth.google.access_token) {
-			req.headers.google = auth.google;
-		}
+			if (auth && auth.google && auth.google.access_token) {
+				req.headers.google = auth.google;
+				req.headers.google_token = auth.google.access_token;
+			}
+			next();
+		});
+	} else {
 		next();
-	});
+	}
 };
 
 

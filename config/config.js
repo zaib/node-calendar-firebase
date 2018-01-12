@@ -1,6 +1,6 @@
 module.exports = {
 	development: {
-		/* firebase: {
+		firebase: {
 			"type": "service_account",
 			"project_id": "connecpath",
 			"private_key_id": "a1bb91bc51d52c61ff14a000a778fd5f210a5df8",
@@ -12,9 +12,8 @@ module.exports = {
 			"auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
 			"client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/firebase-adminsdk-sj1xa%40connecpath.iam.gserviceaccount.com"
 		}, 
-		databaseURL: 'https://connecpath.firebaseio.com',		
-		*/
-		firebase: {
+		databaseURL: 'https://connecpath.firebaseio.com',
+		/* firebase: {
 			"type": "service_account",
 			"project_id": "mvp-v1-00",
 			"private_key_id": "02d1500d0a0062f7302dda1b29750168a67dd278",
@@ -27,6 +26,7 @@ module.exports = {
 			"client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/firebase-adminsdk-ti4ey%40mvp-v1-00.iam.gserviceaccount.com"
 		},
 		databaseURL: 'https://mvp-v1-00.firebaseio.com/',
+		 */
 		google: {
 			consumer_key: '839143158083-47q8oa9j0pg9m5t98pq21l6aft816gnv.apps.googleusercontent.com',
 			consumer_secret: 'zMnsyaeZ7HZNgujkTVyXfYuu',

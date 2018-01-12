@@ -73,10 +73,8 @@ module.exports = {
 		});
 		token.refresh(function (error, result) {
 			if (error) {
-				console.log('Refresh token error: ', error.message);
 				callback(request, response, error, null);
 			} else {
-				console.log('New token: ', result.token);
 				callback(request, response, null, result);
 			}
 		});

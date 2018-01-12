@@ -65,7 +65,7 @@ app.controller('myCtrl', function ($scope, $http, $window, toast) {
 	$scope.syncGoogleEvents = function () {
 		$http({
 			method: 'GET',
-			url: BASE_URL + '/google/sync',
+			url: BASE_URL +'/google/'+ localStorage.getItem('username') + '/sync',
 			headers: {
 				'username': localStorage.getItem('username')
 			}

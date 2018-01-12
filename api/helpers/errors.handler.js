@@ -1,6 +1,10 @@
 module.exports = {
-    usernameMissing: {
+    usernameError: {
+        status: 404,
+        message: 'username not found or username is not passed as a parameter.'
+    },
+    googleAuthError: {
         status: 400,
-        message: 'username is not passed as url param'
+        message: 'Google access token error.'
     }    
 };

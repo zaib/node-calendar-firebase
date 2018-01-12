@@ -1,20 +1,21 @@
 const env = process.env.NODE_ENV || 'development';
-var config = require('./../../config/config')[env];
+const config = require('./../../config/config')[env];
 
-var express = require('express');
-var router = express.Router();
-var moment = require('moment');
-var _ = require('lodash');
-var async = require('async');
+const express = require('express');
+const router = express.Router();
+const moment = require('moment');
+const _ = require('lodash');
+const async = require('async');
 
-var DEFAULT = require('./../../config/constants.js');
+const DEFAULT = require('./../../config/constants.js');
 
-var outlookAuthHelper = require('./../helpers/outlook.auth.helper');
+const outlookAuthHelper = require('./../helpers/outlook.auth.helper');
+const errorHelper = require('./../helpers/errors.handler');
 
-var outlook = require('node-outlook');
+const outlook = require('node-outlook');
 
-var firebase = require('./../../config/connection.js');
-var ref = firebase.ref('users');
+const firebase = require('./../../config/connection.js');
+const ref = firebase.ref('users');
 
 router.get('/authorize', function (req, res) {
 	var authCode = req.query.code;
@@ -140,7 +141,7 @@ router.get('/:username/sync', function (req, res) {
 					}
 
 					let outlookEventList = outlookAuthHelper.parseOutlookResponse(response.body.value);
-					
+
 					let filterStartDate = moment(startDate).unix();
 					let filterToDate = moment(endDate).unix();
 
@@ -148,14 +149,14 @@ router.get('/:username/sync', function (req, res) {
 					ref.child(`/${username}/events`).orderByChild("date").startAt(filterStartDate).endAt(filterToDate).once("value").then(function (snapshot) {
 						var snapshotVal = snapshot.val();
 						firebaseEventList = (snapshotVal) ? Object.values(snapshotVal) : [];
-						
+
 						_.forEach(outlookEventList, function (outlookEvent) {
 							let firebaseEvent = _.find(firebaseEventList, {
 								outlookEventId: outlookEvent.outlookEventId
 							});
 
 							let eventId;
-							if(firebaseEvent && firebaseEvent.id) {
+							if (firebaseEvent && firebaseEvent.id) {
 								eventId = firebaseEvent.id;
 							} else {
 								eventId = ref.push().key;
@@ -175,14 +176,42 @@ router.get('/:username/sync', function (req, res) {
 	});
 });
 
-router.get('/:username/refreshtoken', function (req, res) {
-	var refresh_token = req.headers.refresh_token || req.query.refresh_token;
-	if (refresh_token === undefined) {
-		return res.status(400).json({
-			error: 'refresh token is missing.'
-		});
+
+function refreshedTokenReceived(req, res, error, auth) {
+	if (error) {
+		return res.json('ERROR getting token: ' + error);
 	} else {
-		outlookAuthHelper.getTokenFromRefreshToken(refresh_token, tokenReceived, req, res);
+		return res.json(auth);
+	}
+}
+
+router.get('/:username/refreshtoken', (req, res) => {
+	let username = req.params.username || req.headers.username;
+	if (!username) {
+		return res.status(errorHelper.usernameError.status).json(errorHelper.usernameError);
+	} else {
+		ref.child(`/${username}/outlook`).once('value').then(function (snapshot) {
+			let snapshotVal = snapshot.val();
+			let currentUnixTime = moment(new Date()).unix();
+			let isTokenExpired = (snapshotVal) ? moment(currentUnixTime).isAfter(snapshotVal.expires_at) : false;
+			let refresh_token = (snapshotVal) ? snapshotVal.refresh_token : false;
+			if (true || isTokenExpired && refresh_token) {
+				outlookAuthHelper.getTokenFromRefreshToken(refresh_token, function refreshedTokenReceived(req, res, error, auth) {
+					if (error) {
+						return res.json('ERROR getting token: ' + error);
+					} else {
+						auth.token.expires_at = moment(auth.token.expires_at).unix();
+						let refreshedToken = auth.token;
+						ref.child(`/${username}/outlook`).update(refreshedToken);			
+						return res.json(refreshedToken);
+					}
+				}, req, res);
+			} else {
+				return res.status(errorHelper.usernameError.status).json(errorHelper.usernameError);
+			}
+		}).catch(function (err) {
+			return res.json(err);
+		});
 	}
 });
 
