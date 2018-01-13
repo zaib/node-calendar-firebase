@@ -37,7 +37,9 @@ const strategy = new GoogleStrategy({
 
 		params.refresh_token = refreshToken;
 		params.email = profile.emails[0].value;
-		params.expires_at = moment().add(params.expires_in, "s").format("X");
+		// params.expires_at = parseInt(moment().add(params.expires_in, "s").format("X"));
+		params.expires_at = moment().add(1, 'day').unix();
+
 		profile.params = params;
 
 		return done(null, profile);
@@ -101,58 +103,26 @@ router.get('/:username/refreshtoken', function (req, res) {
 	// check for user
 	let username = req.params.username || req.headers.username;
 	let refreshAccessToken = req.headers.refresh_token || req.query.refresh_token;
-	if (!username) {
-		return res.status(errorHelper.usernameError.status).json(errorHelper.usernameError);
+	if (!username || !refreshAccessToken) {
+		return res.status(errorHelper.requiredParamMissing.status).json(errorHelper.requiredParamMissing);
 	} else {
 		let isTokenExpired = false;
 		let currentUnixTime = moment(new Date()).unix();
-		async.waterfall([
-			function (cb) {
-				if(!refreshAccessToken) {
-					ref.child(`/${username}/google`).once('value').then(function (snapshot) {
-						let snapshotVal = snapshot.val();
-						if (snapshotVal) {
-							isTokenExpired = moment(currentUnixTime).isAfter(snapshotVal.expires_at);
-							cb(null, snapshotVal);
-						} else {
-							return res.status(errorHelper.googleAuthError.status).json(errorHelper.googleAuthError);
-						}
-					}).catch(function (err) {
-						cb(err);
-					});
-				} else {
-					cb(null, refreshAccessToken);					
-				}
-			},
-			function (auth, cb) {
-				if (true || isTokenExpired && auth) {
-					// set the current users access and refresh token
-					oauth2Client.credentials = {
-						refresh_token: auth.refresh_token
-					};
-					// request a new token
-					oauth2Client.refreshAccessToken(function (err, token) {
-						if (err) {
-							return cb(err);
-						} else if (token) {
-							token.expires_at = token.expiry_date;
-							delete token.expiry_date;
-							return cb(null, token);
-						}
-					});
-				} else {
-					cb(null, auth);
-				}
-			}, function(refreshedToken, cb) {
-				ref.child(`/${username}/google`).update(refreshedToken);
-				return cb(null, refreshedToken);
-			},
-		], function (err, auth) {
+		// set the current users access and refresh token
+		oauth2Client.credentials = {
+			refresh_token: refreshAccessToken
+		};
+		// request a new token
+		oauth2Client.refreshAccessToken(function (err, token) {
 			if (err) {
 				return res.json(err);
-			} else {
-				return res.json(auth);
 			}
+			token.expires_at = token.expiry_date;
+			delete token.expiry_date;
+			token.expires_at = moment().add(1, 'day').unix();
+
+			ref.child(`/${username}/google`).update(token);
+			return res.json(token);
 		});
 	}
 });
@@ -179,13 +149,12 @@ router.all('/', function (req, res) {
 router.get('/:username/sync', function (req, res) {
 
 	let username = req.params.username || req.headers.username;
-	if (!username) {
+	let accessToken = req.headers.google_token;
+	let calendarId = req.headers.email;
+	if (!username || !accessToken || !calendarId) {
 		return res.status(errorHelper.usernameError.status).json(errorHelper.usernameError);
 	}
 
-	//Create an instance from accessToken
-	let accessToken = req.headers.google.access_token;
-	let calendarId = req.headers.google.email;
 	// Set up our sync window from midnight on the current day to
 	// midnight 7 days from now.
 	let startDate = moment().startOf('day');
@@ -201,7 +170,7 @@ router.get('/:username/sync', function (req, res) {
 	};
 
 	gcal(accessToken).events.list(calendarId, params, function (err, data) {
-		if (err) return res.status(500).json(err);
+		if (err) return res.status(err.code).json(err);
 		let googleEventList = _.filter(data.items, function (item) {
 			if (item.creator && item.creator.email === calendarId) {
 				return item;

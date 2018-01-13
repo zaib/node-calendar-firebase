@@ -9,6 +9,21 @@ const session = require('express-session');
 const app = express();
 const passport = require('passport');
 
+const firebase = require('./config/connection.js');
+const ref = firebase.ref('users');
+
+const CronJob = require('cron').CronJob;
+const moment = require('moment');
+const _ = require('lodash');
+const async = require('async');
+const rp = require('request-promise');
+
+const env = process.env.NODE_ENV || 'development';
+const config = require('./config/config')[env];
+
+const DEFAULT = require('./config/constants.js');
+const errorHelper = require('./api/helpers/errors.handler');
+
 // view engine setup
 app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'ejs');
@@ -28,58 +43,122 @@ app.use(session({
 }));
 
 app.use(passport.initialize());
-
 app.use(express.static(path.join(__dirname, 'public')));
 
-
-const firebase = require('./config/connection.js');
-const ref = firebase.ref('users');
-
-const moment = require('moment');
-const async = require('async');
-const rp = require('request-promise');
-
 const passAcessTokens = (req, res, next) => {
-	let auth = {
-		outlook: {},
-		google: {}
-	};
 	let username = req.headers.username;
+	let currentUnixTime = moment(new Date()).unix();
+	let isOutlookTokenExpired = false;
+	let isGoogleTokenExpired = false;
 	if (username) {
-		async.waterfall([
-			function (cb) {
-				ref.child(`/${username}/outlook`).once('value').then(function (snapshot) {
-					let snapshotVal = snapshot.val();
-					auth.outlook = snapshotVal;
-					cb(null, auth);
-				}).catch(function (err) {
-					cb(err);
+		ref.child(`/${username}`).once('value').then(function (snapshot) {
+			let snapshotVal = snapshot.val();
+			let user = snapshotVal;
+			if (user) {
+				isOutlookTokenExpired = moment(currentUnixTime).isAfter(user.outlook.expires_at);
+				isGoogleTokenExpired = moment(currentUnixTime).isAfter(user.google.expires_at);
+				async.series([
+					function (cb) {
+						if (isOutlookTokenExpired && user.outlook) {
+							let refreshTokenUrl = req.protocol + '://' + req.get('host') + `/outlook/${username}/refreshtoken`;
+							let options = {
+								uri: refreshTokenUrl,
+								headers: {
+									refresh_token: user.outlook.refresh_token
+								}
+							};
+							rp(options)
+								.then(function (result) {
+									cb(null, result);
+								})
+								.catch(function (err) {
+									cb(err);
+								});
+						} else {
+							cb(null, user.outlook);
+						}
+					},
+					function (cb) {
+						if (isGoogleTokenExpired && user.google) {
+							let refreshTokenUrl = req.protocol + '://' + req.get('host') + `/google/${username}/refreshtoken`;
+							let options = {
+								uri: refreshTokenUrl,
+								headers: {
+									refresh_token: user.google.refresh_token
+								}
+							};
+							rp(options)
+								.then(function (result) {
+									cb(null, result);
+								})
+								.catch(function (err) {
+									cb(err);
+								});
+						} else {
+							cb(null, user.google);
+						}
+					},
+				], function (err, results) {
+					if (results[0]) {
+						req.headers.access_token = results[0].access_token;
+					}
+					if (results[1]) {
+						req.headers.google_token = results[1].access_token;
+						req.headers.email = results[1].email;
+					}
+					next();
 				});
-			},
-			function (authObj, cb) {
-				ref.child(`/${username}/google`).once('value').then(function (snapshot) {
-					let snapshotVal = snapshot.val();
-					auth.google = snapshotVal;
-					cb(null, auth);
-				}).catch(function (err) {
-					cb(err);
-				});
-			},
-		], function (err, auth) {
-			if (auth && auth.outlook && auth.outlook.access_token) {
-				req.headers.access_token = auth.outlook.access_token;
-				req.headers.outlook = auth.outlook.access_token;
+
+			} else {
+				return res.status(errorHelper.usernameError.status).json(errorHelper.usernameError);
 			}
-			if (auth && auth.google && auth.google.access_token) {
-				req.headers.google = auth.google;
-				req.headers.google_token = auth.google.access_token;
-			}
-			next();
+		}).catch(function (err) {
+			return res.json(err);
 		});
 	} else {
 		next();
 	}
 };
+
+// last activity logger
+app.use((req, res, next) => {
+	let username = req.headers.username || req.params.username || req.query.username;
+	if (username) {
+		// let currentUnixTime = moment(new Date()).unix();
+		let currentUnixTime = moment().subtract(30, 'day').unix();
+		let payload = {
+			recentActivityTime: currentUnixTime
+		};
+		ref.child(`/${username}`).update(payload);
+		next();
+	} else {
+		next();
+	}
+});
+
+// Cron Job
+// const sample = 'Seconds Minutes Hours Day Month Day-of-Week';
+const runDaily = '0 0 0 * * *';
+const runEverySecond = '* * * * * *';
+new CronJob(runDaily, function () {
+		let refreshTokenUrl = config.apps.api.baseUrl + '/cron/refreshtoken';
+		let options = {
+			uri: refreshTokenUrl
+		};
+		rp(options)
+			.then(function (result) {
+				console.log('tokens refreshed.');
+			})
+			.catch(function (err) {
+				console.log(err);
+			});
+	}, function () {
+		/* This function is executed when the job stops */
+		console.log("CRON Stop");
+	},
+	true, /* Start the job right now */
+	DEFAULT.timezone /* Time zone of this job. */
+);
 
 
 const index = require('./api/routes/index');
@@ -88,8 +167,10 @@ const eventsCtrl = require('./api/controllers/events.controller');
 const syncEventsCtrl = require('./api/controllers/sync.events.controller');
 const outlookCtrl = require('./api/controllers/outlook.controller');
 const googleCtrl = require('./api/controllers/google.controller');
+const cronCtrl = require('./api/controllers/cron.controller');
 
 app.use('/', index);
+app.use('/cron', cronCtrl);
 app.use('/users', usersCtrl);
 // app.use('/events', eventsCtrl);
 app.use('/events', passAcessTokens, syncEventsCtrl);

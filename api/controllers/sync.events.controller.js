@@ -6,6 +6,7 @@ const async = require('async');
 var gcal = require('google-calendar');
 const outlook = require('node-outlook');
 const outlookAuthHelper = require('./../helpers/outlook.auth.helper');
+const errorHelper = require('./../helpers/errors.handler');
 const DEFAULT = require('./../../config/constants.js');
 
 const firebase = require('./../../config/connection.js');
@@ -64,9 +65,7 @@ router.get('/:username/:id', getEventDetail);
 
 const createEvent = function createEvent(req, res) {
 
-	let accessToken = req.headers.access_token || req.query.access_token;
 	let username = req.params.username;
-
 	let payload = req.body;
 	payload.id = ref.push().key;
 	let eventId = payload.id;
@@ -100,6 +99,7 @@ const createEvent = function createEvent(req, res) {
 			});
 		},
 		function (event, cb) {
+			let accessToken = req.headers.access_token || req.query.access_token;
 			if (accessToken) {
 				let eventData = event;
 				let newEvent = {
@@ -140,10 +140,11 @@ const createEvent = function createEvent(req, res) {
 			}
 		},
 		function (event, cb) {
-			if (req.headers.google && req.headers.google.access_token && req.headers.google.email) {
-				let googleToken = req.headers.google.access_token;
-				let calendarId = req.headers.google.email;
-			
+			let googleToken = req.headers.google_token;
+			let calendarId = req.headers.email;
+
+			if (googleToken && calendarId) {
+
 				let payload = {
 					'summary': eventData.subject,
 					'location': eventData.location,
@@ -206,7 +207,6 @@ router.post('/:username', createEvent);
 
 const updateEvent = function updateEvent(req, res) {
 
-	let accessToken = req.headers.access_token || req.query.access_token;
 	let username = req.params.username;
 
 	let payload = {};
@@ -228,14 +228,14 @@ const updateEvent = function updateEvent(req, res) {
 	payload.fromTime = moment(payload.fromTime).unix();
 	payload.toTime = moment(payload.toTime).unix();
 	// payload.source = 'connecpath';
-	
+
 	let eventData = payload;
-	
+
 	let userSettings = {};
 	let outlookEvent = {};
 	let googleEvent = {};
 	let firebaseEvent = {};
-	
+
 	async.waterfall([
 		function (cb) {
 			ref.child(`/${username}/settings`).once('value').then(function (snapshot) {
@@ -250,6 +250,7 @@ const updateEvent = function updateEvent(req, res) {
 			});
 		},
 		function (event, cb) {
+			let accessToken = req.headers.access_token || req.query.access_token;
 			if (accessToken && firebaseEvent.outlookEventId) {
 				var updatePayload = {
 					'Subject': eventData.subject,
@@ -266,7 +267,7 @@ const updateEvent = function updateEvent(req, res) {
 						'TimeZone': (userSettings && userSettings.timezone) ? userSettings.timezone : DEFAULT.timezone,
 					},
 					'Location': {
-						'DisplayName': (eventData.location) ? eventData.location : userSettings.location,						
+						'DisplayName': (eventData.location) ? eventData.location : userSettings.location,
 					}
 				};
 
@@ -293,10 +294,10 @@ const updateEvent = function updateEvent(req, res) {
 		},
 		function (event, cb) {
 			if (req.headers.google && firebaseEvent.googleEventId) {
-			
-				let googleToken = req.headers.google.access_token;
-				let calendarId = req.headers.google.email;
-				
+
+				let googleToken = req.headers.google_token;
+				let calendarId = req.headers.email;
+
 				let googleEventPayload = {
 					'summary': eventData.subject,
 					'location': eventData.location,
@@ -357,61 +358,70 @@ router.put('/:username/:id', updateEvent);
 
 var deleteEvent = function deleteEvent(req, res) {
 
-	let accessToken = req.headers.access_token || req.query.access_token;
 	let username = req.params.username;
-	let googleToken = (req.headers.google) ? req.headers.google.access_token : null;
-	let calendarId = (req.headers.google) ? req.headers.google.email : null;
 	let eventId = req.params.id;
+	if (!username || !eventId) {
+		return res.status(errorHelper.requiredParamMissing.status).json(errorHelper.requiredParamMissing);
+	}
 
-	async.waterfall([
-		function (cb) {
-			ref.child(`/${username}/events/${eventId}`).once('value').then(function (snapshot) {
-				let snapshotVal = snapshot.val();
-				cb(null, snapshotVal);
+	ref.child(`/${username}/events/${eventId}`).once('value').then(function (snapshot) {
+		let snapshotVal = snapshot.val();
+		let event = snapshotVal;
+		if (event) {
+			async.series([
+				function (cb) {
+					let accessToken = req.headers.access_token || req.query.access_token;
+					if (accessToken && event.outlookEventId) {
+						var deleteEventParameters = {
+							token: accessToken,
+							eventId: event.outlookEventId
+						};
+						outlook.calendar.deleteEvent(deleteEventParameters, function (error, result) {
+							if (error) {
+								cb(error);
+							} else {
+								cb(null, event);
+							}
+						});
+					} else {
+						cb(null, event);
+					}
+				},
+				function (cb) {
+					let googleToken = req.headers.google_token;
+					let calendarId = req.headers.email;
+
+					if (googleToken && calendarId && event.googleEventId) {
+
+						gcal(googleToken).events.delete(calendarId, event.googleEventId, {}, function (err, data) {
+							if (err) {
+								cb(err);
+							} else {
+								cb(null, event);
+							}
+						});
+					} else {
+						cb(null, event);
+					}
+				},
+				function (cb) {
+					ref.child(`/${username}/events/${eventId}`).remove().then((err) => console.log(err));
+					cb(null, event);
+				},
+			], function (error, data) {
+				if (error) {
+					return res.json(error);
+				} else if (data.length) {
+					return res.json(data);
+				}
 			});
-		},
-		function (event, cb) {
-			if (accessToken && event && event.outlookEventId) {
-				var deleteEventParameters = {
-					token: accessToken,
-					eventId: event.outlookEventId
-				};
-				outlook.calendar.deleteEvent(deleteEventParameters, function (error, result) {
-					if (error) {
-						cb(error);						
-					} else {
-						cb(null, event);
-					}
-				});
-			} else {
-				cb(null, event);
-			}
-		},
-		function(event, cb) {
-			if (googleToken && calendarId && event.googleEventId) {
-
-				gcal(googleToken).events.delete(calendarId, event.googleEventId, {}, function (err, data) {
-					if (err) {
-						cb(err);
-					} else {
-						cb(null, event);
-					}
-				});
-			} else {
-				cb(null, event);				
-			}
-		},
-		function (event, cb) {
-			ref.child(`/${username}/events/${eventId}`).remove().then((err) => console.log(err));
-			cb(null, event);
-		},
-	], function (error, data) {
-		if(error) {
-			return res.json(error);
 		} else {
-			return res.json(data);
+			return res.status(errorHelper.notFound.status).json(errorHelper.notFound);
 		}
+	}).catch(function (err) {
+		return reseller.json(err);
 	});
+
 };
 router.delete('/:username/:id', deleteEvent);
 

@@ -34,7 +34,8 @@ function tokenReceived(req, res, error, auth) {
 		return res.json('ERROR getting token: ' + error);
 	} else {
 
-		auth.token.expires_at = moment(auth.token.expires_at).unix();
+		// auth.token.expires_at = moment(auth.token.expires_at).unix();
+		auth.token.expires_at = moment().add(1, 'day').unix();		
 		auth.token.email = outlookAuthHelper.getEmailFromIdToken(auth.token.id_token);
 		let email = auth.token.email;
 		var username = '';
@@ -187,31 +188,21 @@ function refreshedTokenReceived(req, res, error, auth) {
 
 router.get('/:username/refreshtoken', (req, res) => {
 	let username = req.params.username || req.headers.username;
-	if (!username) {
-		return res.status(errorHelper.usernameError.status).json(errorHelper.usernameError);
+	let refreshAccessToken = req.headers.refresh_token || req.query.refresh_token;
+
+	if (!username || !refreshAccessToken) {
+		return res.status(errorHelper.requiredParamMissing.status).json(errorHelper.requiredParamMissing);
 	} else {
-		ref.child(`/${username}/outlook`).once('value').then(function (snapshot) {
-			let snapshotVal = snapshot.val();
-			let currentUnixTime = moment(new Date()).unix();
-			let isTokenExpired = (snapshotVal) ? moment(currentUnixTime).isAfter(snapshotVal.expires_at) : false;
-			let refresh_token = (snapshotVal) ? snapshotVal.refresh_token : false;
-			if (true || isTokenExpired && refresh_token) {
-				outlookAuthHelper.getTokenFromRefreshToken(refresh_token, function refreshedTokenReceived(req, res, error, auth) {
-					if (error) {
-						return res.json('ERROR getting token: ' + error);
-					} else {
-						auth.token.expires_at = moment(auth.token.expires_at).unix();
-						let refreshedToken = auth.token;
-						ref.child(`/${username}/outlook`).update(refreshedToken);			
-						return res.json(refreshedToken);
-					}
-				}, req, res);
+		outlookAuthHelper.getTokenFromRefreshToken(refreshAccessToken, function refreshedTokenReceived(req, res, error, auth) {
+			if (error) {
+				return res.json('ERROR getting token: ' + error);
 			} else {
-				return res.status(errorHelper.usernameError.status).json(errorHelper.usernameError);
+				// auth.token.expires_at = moment(auth.token.expires_at).unix();
+				auth.token.expires_at = moment().add(1, 'day').unix();
+				ref.child(`/${username}/outlook`).update(auth.token);			
+				return res.json(auth.token);
 			}
-		}).catch(function (err) {
-			return res.json(err);
-		});
+		}, req, res);
 	}
 });
 
