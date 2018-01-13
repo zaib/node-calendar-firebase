@@ -54,7 +54,7 @@ const passAcessTokens = (req, res, next) => {
 		ref.child(`/${username}`).once('value').then(function (snapshot) {
 			let snapshotVal = snapshot.val();
 			let user = snapshotVal;
-			if (user) {
+			if (user && user.outlook && user.google) {
 				isOutlookTokenExpired = moment(currentUnixTime).isAfter(user.outlook.expires_at);
 				isGoogleTokenExpired = moment(currentUnixTime).isAfter(user.google.expires_at);
 				async.series([
@@ -110,10 +110,11 @@ const passAcessTokens = (req, res, next) => {
 				});
 
 			} else {
-				return res.status(errorHelper.usernameError.status).json(errorHelper.usernameError);
+				next();
 			}
 		}).catch(function (err) {
-			return res.json(err);
+			// return res.json(err);
+			next();
 		});
 	} else {
 		next();

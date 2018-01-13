@@ -152,7 +152,9 @@ router.get('/:username/sync', function (req, res) {
 	let accessToken = req.headers.google_token;
 	let calendarId = req.headers.email;
 	if (!username || !accessToken || !calendarId) {
-		return res.status(errorHelper.usernameError.status).json(errorHelper.usernameError);
+		return res.status(400).json({
+			error: 'bad Request. missing email address or access token.'
+		});
 	}
 
 	// Set up our sync window from midnight on the current day to

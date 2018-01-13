@@ -26,9 +26,9 @@ app.controller('myCtrl', function ($scope, $http, $window, toast) {
 	};
 
 	var defaultUser = {
-		username: 'jahanzaib',
-		outlookEmail: 'jahanzaib.aslam@outlook.com',
-		googleEmail: 'jahanzaibaslam156@gmail.com',
+		username: '', //jahanzaib
+		outlookEmail: '', //jahanzaib.aslam@outlook.com,
+		googleEmail: '', //jahanzaibaslam156@gmail.com,
 		settings: {
 			location: 'Yozo 42nd ST, Times Square NY',
 			timezone: 'US/Eastern'		
@@ -67,7 +67,8 @@ app.controller('myCtrl', function ($scope, $http, $window, toast) {
 				'username': localStorage.getItem('username')
 			}
 		}).then(function successCallback(response) {
-			$scope.eventsList = response.data || [];
+			var events = Object.keys(response.data);
+			$scope.eventsList = (events.length) ? response.data : [];
 			_.forEach($scope.eventsList, event => {
 				event.fromTime = moment.unix(event.fromTime).format("YYYY-MM-DD HH:mm");
 				event.toTime = moment.unix(event.toTime).format("YYYY-MM-DD HH:mm");
