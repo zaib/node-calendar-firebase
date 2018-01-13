@@ -293,7 +293,7 @@ const updateEvent = function updateEvent(req, res) {
 			}
 		},
 		function (event, cb) {
-			if (req.headers.google && firebaseEvent.googleEventId) {
+			if (req.headers.google_token && firebaseEvent.googleEventId) {
 
 				let googleToken = req.headers.google_token;
 				let calendarId = req.headers.email;
@@ -378,7 +378,7 @@ var deleteEvent = function deleteEvent(req, res) {
 						};
 						outlook.calendar.deleteEvent(deleteEventParameters, function (error, result) {
 							if (error) {
-								cb(error);
+								cb();
 							} else {
 								cb(null, event);
 							}
@@ -394,8 +394,8 @@ var deleteEvent = function deleteEvent(req, res) {
 					if (googleToken && calendarId && event.googleEventId) {
 
 						gcal(googleToken).events.delete(calendarId, event.googleEventId, {}, function (err, data) {
-							if (err) {
-								cb(err);
+							if (err && err.status !== 410) {
+								cb();
 							} else {
 								cb(null, event);
 							}
