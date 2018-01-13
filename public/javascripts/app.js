@@ -26,9 +26,13 @@ app.controller('myCtrl', function ($scope, $http, $window, toast) {
 	};
 
 	var defaultUser = {
-		username: 'jahanzaibaslam',
+		username: 'jahanzaib',
 		outlookEmail: 'jahanzaib.aslam@outlook.com',
-		googleEmail: 'jahanzaibaslam156@gmail.com'
+		googleEmail: 'jahanzaibaslam156@gmail.com',
+		settings: {
+			location: 'Yozo 42nd ST, Times Square NY',
+			timezone: 'US/Eastern'		
+		}
 	};
 
 	$scope.eventsList = [];
@@ -41,6 +45,18 @@ app.controller('myCtrl', function ($scope, $http, $window, toast) {
 	};
 	$scope.resetCurrentEvent = function () {
 		$scope.currentEvent = defaultEvent;
+	};
+
+	$scope.getUsersList = function () {
+		$http({
+			method: 'GET',
+			url: BASE_URL + '/users'
+		}).then(function successCallback(response) {
+			$scope.usersList = response.data || [];
+		}, function errorCallback(error) {
+			console.log(error);
+
+		});
 	};
 
 	$scope.getEventsList = function () {
@@ -187,4 +203,10 @@ app.controller('myCtrl', function ($scope, $http, $window, toast) {
 			});
 		});
 	};
+
+	$scope.changeUser = function(user) {
+		localStorage.setItem('username', user.username);
+		$window.location.href = window.location.href + 'dashboard';
+	};
+
 });

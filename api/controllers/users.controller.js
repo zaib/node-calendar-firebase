@@ -17,7 +17,15 @@ var isNullValuesAllowed = false;
 
 /* GET users listing. */
 router.get('/', function (req, res, next) {
-	res.send('Users -> OK');
+	ref.once('value').then(function (snapshot) {
+		if (snapshot) {
+			var snapshotVal = snapshot.val();
+			var users = Object.values(snapshotVal);
+			return res.json(users);
+		} else {
+			return res.json([]);
+		}
+	});
 });
 
 var getUser = function getUser(req, res) {
@@ -51,7 +59,7 @@ router.delete('/:username', deleteUser);
 var getUserSettings = function getUserSettings(req, res) {
 	let username = req.params.username;
 	ref.child(`/${username}/settings`).once('value').then(function (snapshot) {
-		let snapshotVal = snapshot.val();	
+		let snapshotVal = snapshot.val();
 		return res.json(snapshotVal);
 	});
 };

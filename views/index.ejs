@@ -54,23 +54,45 @@
 
 	</div>
 	<div class="container-fluid" ng-controller="myCtrl">
-		<form>
-			<div class="form-group">
-				<label for="username">Username</label>
-				<input type="text" class="form-control" required id="username" placeholder="Enter Username" ng-model="user.username" />
+		<div class="row">
+			<div class="col-sm-6">
+				<h3>Register New User</h3>
+				<form>
+					<div class="form-group">
+						<label for="username">Username</label>
+						<input type="text" class="form-control" required id="username" placeholder="Enter Username" ng-model="user.username" />
+					</div>
+					<div class="form-group">
+						<label for="outlookEmail">Outlook Email</label>
+						<input type="text" class="form-control" required id="outlookEmail" placeholder="Enter Outlook Email" ng-model="user.outlookEmail"
+						/>
+					</div>
+					<div class="form-group">
+						<label for="googleEmail">Google Email</label>
+						<input type="text" class="form-control" required id="googleEmail" placeholder="Enter Google Email" ng-model="user.googleEmail"
+						/>
+					</div>
+					<div class="form-group">
+						<label for="location">Location</label>
+						<input type="text" class="form-control" required id="location" placeholder="Enter Location" ng-model="user.settings.location" />
+					</div>
+
+					<div class="form-group">
+						<label for="timezone">Timezone</label>
+						<input type="text" class="form-control" required id="timezone" placeholder="Enter Timezone" ng-model="user.settings.timezone" />
+					</div>
+
+					<button type="submit" class="btn btn-primary" ng-click="createUser()">Save</button>
+				</form>
 			</div>
-			<div class="form-group">
-				<label for="outlookEmail">Outlook Email</label>
-				<input type="text" class="form-control" required id="outlookEmail" placeholder="Enter Outlook Email" ng-model="user.outlookEmail"
-				/>
+			<div class="col-sm" ng-init="getUsersList();">
+				<h3>Select Exising User</h3>
+				<select ng-options="user as user.username for user in usersList track by user.username" ng-model="currentUser" ng-change="changeUser(currentUser)">
+					<option value="">Select User</option>
+				</select>
 			</div>
-			<div class="form-group">
-				<label for="googleEmail">Google Email</label>
-				<input type="text" class="form-control" required id="googleEmail" placeholder="Enter Google Email" ng-model="user.googleEmail"
-				/>
-			</div>
-			<button type="submit" class="btn btn-primary" ng-click="createUser()">Save</button>
-		</form>
+			
+		</div>
 	</div>
 
 </body>
